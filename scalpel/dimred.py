@@ -4,13 +4,13 @@ from sklearn.neighbors import NearestNeighbors
 from .wts import info_score
 import numpy as np
 from fbpca import pca
+from scipy.sparse import csr_matrix
 import pandas as pd
 
+
 def info_pca(nbhd_size=15, n_neighbors=15, n_init_pcs=50, n_info_pcs=50, key_added='info_pca', metric='cosine',
-             max_bins=float('inf'), iters=1, two_tailed=True, entropy_normalize=False, p_val=True,
+             max_bins=float('inf'), iters=1, entropy_normalize=False, p_val=True,
              keep_scores=True, binarize=True, **kwargs):
-
-
 
     def f(d):
         sc.tl.pca(d, n_comps=n_init_pcs)
@@ -33,8 +33,14 @@ def info_pca(nbhd_size=15, n_neighbors=15, n_init_pcs=50, n_info_pcs=50, key_add
         for i in range(iters):
             print('iteration {}'.format(i))
 
-            infos = info_score((d.X>0).astype('float'), nbhds, weighted_dir=True, max_bins=max_bins, two_tailed=two_tailed,
-                               entropy_normalize=entropy_normalize, p_val=p_val, **kwargs)
+            if i==0:
+                #keep binomial scores for future runs
+                infos, gene_bins, binom_scores = info_score((d.X>0).astype('float'), nbhds, weighted_dir=True,
+                                                            max_bins=max_bins, entropy_normalize=entropy_normalize,
+                                                            return_bin_info=True, **kwargs)
+            else:
+                infos = info_score((d.X>0).astype('float'), nbhds, weighted_dir=True, max_bins=max_bins,
+                                   binom_scores = binom_scores, gene_bins=gene_bins, **kwargs)
 
             U, s, Vt = pca(infos, k=n_info_pcs, raw=True)
 
@@ -43,7 +49,6 @@ def info_pca(nbhd_size=15, n_neighbors=15, n_init_pcs=50, n_info_pcs=50, key_add
                 d.obsm[key_added] = np.matmul(X, Vt.transpose())
             else:
                 d.obsm[key_added] = np.matmul(d.X.todense(), Vt.transpose())
-
 
             d.varm[key_added+'_loadings'] = Vt.transpose()
 
@@ -58,8 +63,9 @@ def info_pca(nbhd_size=15, n_neighbors=15, n_init_pcs=50, n_info_pcs=50, key_add
         sc.pp.neighbors(d, use_rep=key_added, key_added=key_added, metric=metric, n_neighbors=n_neighbors)
 
         if keep_scores:
-            info_df = pd.DataFrame(infos)
-            info_df.columns = d.var.index
-            info_df.index = d.obs.index
-            d.layers[key_added+'_score'] = info_df
+            # info_df = pd.DataFrame(infos)
+            # info_df.columns = d.var.index
+            # info_df.index = d.obs.index
+            d.layers[key_added+'_score'] = csr_matrix(infos)
+
     return f

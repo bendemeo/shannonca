@@ -6,73 +6,132 @@ from fbpca import pca
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import normalize
 
-def info_score(X, NNs, weighted_dir=True, return_all=False, max_bins=float('inf'), two_tailed=True,
-               entropy_normalize=False, p_val=True, fast_version=True):
-    """
+def get_binom_scores(gene_probs, k, max_bins=500, two_tailed=True, verbose=True, scaled=True):
+    # compute binom_test(x, k, p) for all x in 1:k and all p in gene_probs
+    # if scaled, put more density in lower probabilities
 
+    if max_bins < float('inf'):
+        # split interval into max_bins bins
+
+        if scaled:
+            print('using scaled bins')
+            min_prob = np.min(gene_probs[gene_probs>0])
+            precision = (min_prob)**(1./float(max_bins)) # fold accuracy in probability approx
+            splits = precision ** (max_bins-(np.arange(max_bins)))
+        else:
+            splits = np.arange(0, 1, 1/max_bins)[1:] # don't allow a gene to have 0 prob...
+
+        #bins each gene gets put in, based on its global probability
+        gene_bins = np.array([np.argmin(np.abs(gene_probs[j] - splits)) for j in range(len(gene_probs))])
+
+        binom_scores = np.zeros((len(splits), k+1))
+
+        for i, p in enumerate(splits):
+            if verbose:
+                print('\r computing binom scores for bin {}/{}'.format(i, len(splits)), end=' ')
+            for j in range(k+1):
+                alt = 'two-sided' if two_tailed else 'less' if float(j)/k < p*k else 'greater'
+
+                sign = 1 if p*k <= j else -1  # negative if lower than expected
+
+                binom_scores[i,j] = sign * -1*np.log(binom_test(j, n=k, p=p, alternative=alt))
+
+    else:  # compute for all gene probs
+        binom_scores = np.zeros((len(gene_probs), k + 1))
+        gene_bins = np.array(range(len(gene_probs)))
+
+        for i in range(len(gene_probs)):
+            if verbose:
+                print('\r computing binom scores for genes {}/{}'.format(i, len(gene_probs)), end=' ')
+            if gene_probs[i] == 0: # no expression, no score
+                continue
+            for j in range(k + 1):
+                p = gene_probs[i]
+                alt = 'two-sided' if two_tailed else 'less' if float(j)/k < p*k else 'greater'
+
+                sign = 1 if p*k <= j else -1  # negative if lower than expected
+
+                binom_scores[i,j] = sign * -1*np.log(binom_test(j, n=k, p=p, alternative=alt))
+
+    return (gene_bins, binom_scores)
+
+
+
+def info_score(X, NNs, weighted_dir=True, max_bins=float('inf'), two_tailed=True,
+               entropy_normalize=False, p_val=True, fast_version=True, binom_scores=None, gene_bins=None,
+                return_all=False, return_bin_info=False, verbose=True, **kwargs):
+    """
     :param X: sparse count matrix, binarized
-    :param NNs: array with indices of nearest neighbors for each obs in X, e.g. from kneighbors() in sklearn
-    :param weighted_dir: Whether to compute signed weights based on gene over/underexpression. Recommended.
-    :param return_all: if True, will also return global and local gene probabilities
+    :param NNs: list with indices of nearest neighbors for each obs in X, e.g. from kneighbors() in sklearn
     :param max_bins: Resolution at which global gene probabilities are computed.
     if inf, genes get their own probabilities. Otherwise, the unit interval is split into max_bins pieces
     and they are rounded. This makes it faster with little performance difference
+    :param weighted_dir: Whether to compute signed weights based on gene over/underexpression. Recommended.
+    :param return_all: if True, will also return global and local gene probabilities
+
+    :param binom_scores: pass in binomial scores for each gene/bin, if pre-computed. Allows saving for future iterations.
+    :param gene_bins: pass in gene bins from previous run. Speeds up iteration
+
+    :param return_bin_info: for iteration: keep information about gene bins and binomial probs.
+    :param fast_version: if True, use matrix multiplication instead of iteration. Fast, but memory-intensive.
     :return: dense matrix of gene/cell weightings.
     """
 
-
     if type(NNs) is np.ndarray:
-        k = NNs.shape[1]  # number of neighbors
         NNs = list(NNs)
 
-    wts = np.zeros(X.shape)  # too big for large data
-    nbhd_counts = np.zeros(X.shape)  # ditto
-    nbhd_sizes = [len(x) for x in NNs]
+    k = len(NNs[0]) # how many neighbors?
 
+    wts = np.zeros(X.shape)  # too big for large data
+    # nbhd_counts = np.zeros(X.shape)  # ditto
+    # nbhd_sizes = [len(x) for x in NNs]
 
     # first compute frequencies of all genes:
     gene_probs = np.array((X > 0).sum(axis=0) / float(X.shape[0])).flatten()
 
-
     #frequencies of genes within neighborhoods
     nbhd_probs = np.zeros(X.shape)
 
+    if binom_scores is None or gene_bins is None:
+        gene_bins, binom_scores = get_binom_scores(gene_probs, k, max_bins=max_bins, two_tailed=two_tailed,
+                                                   verbose=verbose, **kwargs)
 
-    # pre-compute binomial scores to avoid doing it for each cell/gene
-    if max_bins < float('inf'):
-        # split interval into max_bins bins
-        splits = np.arange(0, 1, 1/max_bins)[1:] # don't allow a gene to have 0 prob...
-        gene_bins = np.array([np.argmin(np.abs(gene_probs[j] - splits)) for j in range(X.shape[1])])
+    #
+    # # pre-compute binomial scores to avoid doing it for each cell/gene
+    # if max_bins < float('inf') and binom_scores is None:
+    #     # split interval into max_bins bins
+    #     splits = np.arange(0, 1, 1/max_bins)[1:] # don't allow a gene to have 0 prob...
+    #     gene_bins = np.array([np.argmin(np.abs(gene_probs[j] - splits)) for j in range(X.shape[1])])
+    #
+    #
 
+    #     binom_scores = np.zeros((len(splits), k+1))
+    #     for i, p in enumerate(splits):
+    #         print('\r computing binom scores for bin {}/{}'.format(i, len(splits)), end=' ')
+    #         for j in range(k+1):
+    #             alt = 'two-sided' if two_tailed else 'less' if float(j)/k < p*k else 'greater'
+    #
+    #             if p_val: # information of any occurrence more extreme
+    #                 binom_scores[i,j] = binom_test(j, n=k, p=p, alternative=alt)
+    #             else: #information of this actual occurrence
+    #                 val = -1*(j*np.log(p)+(k-j)*np.log(1-p))
+    #                 if np.isfinite(val): # zero out nans
+    #                     binom_scores[i,j] = -1*(j*np.log(p)+(k-j)*np.log(1-p))
 
-        binom_scores = np.zeros((len(splits), k+1))
-        for i, p in enumerate(splits):
-            print('\r computing binom scores for bin {}/{}'.format(i, len(splits)), end=' ')
-            for j in range(k+1):
-                alt = 'two-sided' if two_tailed else 'less' if float(j)/k < p*k else 'greater'
-
-                if p_val: # information of any occurrence more extreme
-                    binom_scores[i,j] = binom_test(j, n=k, p=p, alternative=alt)
-                else: #information of this actual occurrence
-                    val = -1*(j*np.log(p)+(k-j)*np.log(1-p))
-                    if np.isfinite(val): # zero out nans
-                        binom_scores[i,j] = -1*(j*np.log(p)+(k-j)*np.log(1-p))
-
-
-    else: # compute for all gene probs
-        binom_scores = np.zeros((X.shape[1], k + 1))
-        for i in range(X.shape[1]):
-            print('\r computing binom scores for genes {}/{}'.format(i, X.shape[1]), end=' ')
-            for j in range(k + 1):
-                p=gene_probs[i]
-                alt = 'two-sided' if two_tailed else 'less' if float(j)/k < p*k else 'greater'
-                if p_val: # information of any occurrence more extreme
-                    binom_scores[i,j] = binom_test(j, n=k, p=p, alternative=alt)
-                else: #information of this actual occurrence
-                    val = -1*(j*np.log(p)+(k-j)*np.log(1-p))
-                    if np.isfinite(val): # zero out nans
-                        binom_scores[i,j] = -1*(j*np.log(p)+(k-j)*np.log(1-p))
-
+    #
+    # elif binom_scores is None: # compute for all gene probs
+    #     binom_scores = np.zeros((X.shape[1], k + 1))
+    #     for i in range(X.shape[1]):
+    #         print('\r computing binom scores for genes {}/{}'.format(i, X.shape[1]), end=' ')
+    #         for j in range(k + 1):
+    #             p=gene_probs[i]
+    #             alt = 'two-sided' if two_tailed else 'less' if float(j)/k < p*k else 'greater'
+    #             if p_val: # information of any occurrence more extreme
+    #                 binom_scores[i,j] = binom_test(j, n=k, p=p, alternative=alt)
+    #             else: #information of this actual occurrence
+    #                 val = -1*(j*np.log(p)+(k-j)*np.log(1-p))
+    #                 if np.isfinite(val): # zero out nans
+    #                     binom_scores[i,j] = -1*(j*np.log(p)+(k-j)*np.log(1-p))
 
     if fast_version:
         # compute significance of gene expression in each cell's neighborhood
@@ -80,26 +139,27 @@ def info_score(X, NNs, weighted_dir=True, return_all=False, max_bins=float('inf'
         data = np.ones(np.sum([len(x) for x in NNs]))
         col_ind = [item for sublist in NNs for item in sublist]
         row_ind = [i for i,sublist in enumerate(NNs) for item in sublist]
+
+        #sparse adjacency matrix of NN graph
         nn_matrix = csr_matrix((data, (row_ind, col_ind)), shape=(X.shape[0], X.shape[0]))
 
         # get gene expressions within each neighborhood; this matrix may be less sparse
         nbhd_exprs = (nn_matrix * X).astype('int').todense()
 
-
         #apply binomial scores
-        rows, cols = np.indices((nbhd_exprs.shape))
+        rows, cols = np.indices((X.shape))
         rows = rows.flatten()
         cols = cols.flatten()
         #print(cols)
         #print(rows)
         #print(gene_bins)
         #print(nbhd_exprs[rows, cols])
-        wts = -1*np.log(binom_scores[gene_bins[cols], np.array(nbhd_exprs[rows, cols]).flatten()]).reshape(X.shape)
+        wts = binom_scores[gene_bins[cols], np.array(nbhd_exprs[rows, cols]).flatten()].reshape(X.shape)
         #print(wts)
 
-        if weighted_dir:
-            nbhd_probs = np.divide(nbhd_exprs, np.array([len(x) for x in NNs]).reshape(-1,1))
-            wts *= (2*(nbhd_probs > gene_probs)-1)
+        # if weighted_dir:
+        #     nbhd_probs = np.divide(nbhd_exprs, np.array([len(x) for x in NNs]).reshape(-1,1))
+        #     wts *= (2*(nbhd_probs > gene_probs)-1)
     else:
         for i in range(X.shape[0]):
             print('\r computing counts for cell {}/{}'.format(i, X.shape[0]), end='         ')
@@ -127,14 +187,17 @@ def info_score(X, NNs, weighted_dir=True, return_all=False, max_bins=float('inf'
                 wts[i, :] = -1 * np.log(gene_scores)
 
 
-        if entropy_normalize: # divide each column by the entropy of the corresponding gene
-            gene_entropies = -1*(np.multiply(gene_probs,np.log(gene_probs))+
-                                 np.multiply((1-gene_probs),np.log(1-gene_probs)))
-            gene_entropies[np.logical_not(np.isfinite(gene_entropies))] = float('inf') # zeros out non-expressed or everywhere-expressed genes
-            wts = np.divide(wts, gene_entropies)
 
+    if entropy_normalize: # divide each column by the entropy of the corresponding gene
+        gene_entropies = -1*(np.multiply(gene_probs,np.log(gene_probs))+
+                             np.multiply((1-gene_probs),np.log(1-gene_probs)))
+        gene_entropies[np.logical_not(np.isfinite(gene_entropies))] = float('inf') # zeros out non-expressed or everywhere-expressed genes
+        wts = np.divide(wts, gene_entropies)
 
-    if return_all:
-        return (wts, gene_probs, nbhd_probs)
+    # if return_all:
+    #     return (wts, gene_probs, nbhd_probs)
+
+    if return_bin_info: # for iteration
+        return (wts, gene_bins, binom_scores)
     else:
         return (wts)
