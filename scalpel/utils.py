@@ -1,36 +1,37 @@
 import scanpy as sc
 import numpy as np
 
-
-def ordered_matrixplot(d, n_genes=5, groups=None, **kwargs):
+def metagene_loadings(data, n_genes=10, rankby_abs=False, key='scalpel'):
     """
-    matrix plot of ranked groups, with columns ordered by score instead of abs(score).
-    Separates up- from down-regulated genes better, resulting in visually-cleaner plots
-    :param d:
-    :param n_genes:
-    :param kwargs:
-    :return:
+    return the top-loaded genes for each Scalpel metagene
+    :param data: AnnData or dict output from reduce_scanpy or reduce. Must contain loading data.
+    :param n_genes: Number of top-loaded genes to record
+    :param rankby_abs: If True, record the top genes by absolute value.
+    :param key: Namespace of Scalpel data, if data is a scanpy object. Will look under data.varm[key+'_loadings'].
+    :return: Dictionary mapping [scalpel component number]:{[top gene 1]:loading, [top_gene_2]:loading... [top_gene_k]:loading}
     """
-    top_genes = np.stack([np.array(list(x)) for x in d.uns['rank_genes_groups']['names']][:n_genes])
-    top_scores = np.stack([np.array(list(x)) for x in d.uns['rank_genes_groups']['scores']][:n_genes])
 
-    # order top genes by actual score, not absolute value
-    ordered_top_genes = np.take_along_axis(top_genes, np.argsort(-1 * top_scores, axis=0), axis=0)
+    if type(data) is dict:
+        loadings = data['loadings']
+        var_names = np.array(list(range(loadings.shape[0])))
+    else:
+        loadings = data.varm[key+'_loadings']
+        var_names = np.array(data.var_names)
+
+    loadings /= np.sum(loadings, axis=0) #normalize to percent contribution
+    loadings *= loadings.shape[0] # fold enrichment over expected
+
+    if rankby_abs:
+        idxs = np.transpose(np.argsort(np.abs(loadings), axis=0)[(-1*n_genes):,:]).tolist()
+    else:
+        idxs = np.transpose(np.argsort(loadings, axis=0)[(-1 * n_genes):,:]).tolist()
+
+    genes = [var_names[np.array(x)] for x in idxs]
+    scores = [loadings[x,i] for i, x in enumerate(idxs)]
+
+    result = list(zip(genes, scores))
+    result = {i:{'genes':k[np.argsort(-1*v)], 'scores':np.flip(np.sort(v))} for i,(k,v) in enumerate(result)}
+    return result
 
 
-    # print(ordered_top_genes)
 
-
-
-    grouping_key = d.uns['rank_genes_groups']['params']['groupby']
-    group_names = list(d.uns['rank_genes_groups']['names'].dtype.fields.keys())
-
-    ordered_top_mapping = {group_names[i]: ordered_top_genes[:, i] for i in range(len(group_names))}
-
-
-    if groups is not None:
-        ordered_top_mapping = {k:v for k, v in ordered_top_mapping.items() if k in groups}
-        print(ordered_top_mapping)
-
-
-    sc.pl.matrixplot(d, var_names=ordered_top_mapping, groupby=grouping_key, **kwargs)
