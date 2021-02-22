@@ -6,10 +6,18 @@ from fbpca import pca
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import normalize
 
-def get_binom_scores(gene_probs, k, max_bins=500, two_tailed=True, verbose=True, scaled=False):
+
+def taylor_exp(x, n):
+    # taylor series of 1-(1-x)^n
+    # use for multiple test correction if x is very small.
+    return (n*x-
+           0.5*np.power(x,2)*(n-1)*n+
+           (1./6.)*np.power(x,3) * (n-2)*(n-1)*n-
+           (1./24)*np.power(x,4)*(n-3)*(n-2)*(n-1)*n)
+
+def get_binom_scores(gene_probs, k, max_bins=500, two_tailed=True, verbose=True, scaled=False, n_tests=1, multi_correct=True):
     # compute binom_test(x, k, p) for all x in 1:k and all p in gene_probs
     # if scaled, put more density in lower probabilities
-
     if max_bins < float('inf'):
         # split interval into max_bins bins
 
@@ -36,7 +44,18 @@ def get_binom_scores(gene_probs, k, max_bins=500, two_tailed=True, verbose=True,
             signs = [1 if p*k <= j else -1 for j in np.arange(k+1)]
             pmfs = binom.pmf(np.arange(k+1), k, p)
             orderer = np.argsort(pmfs)
-            binom_scores[i,orderer] = np.array(signs)[orderer] * -1*np.log(np.cumsum(pmfs[orderer]))
+
+            pvals = np.cumsum(pmfs[orderer])
+
+
+            if multi_correct:
+                # use FWER to correct for testing many genes
+                pvals_corrected = 1-np.power(1-pvals, n_tests)
+                pvals_corrected[pvals<1e-10] = taylor_exp(pvals[pvals<1e-10], n_tests) # more accurate
+
+                pvals = pvals_corrected
+
+            binom_scores[i,orderer] = np.array(signs)[orderer] * -1*np.log(pvals)
 
             # else:
             #     for j in range(k+1):
@@ -62,7 +81,20 @@ def get_binom_scores(gene_probs, k, max_bins=500, two_tailed=True, verbose=True,
             signs = [1 if p*k <= j else -1 for j in np.arange(k+1)]
             pmfs = binom.pmf(np.arange(k+1), k, p)
             orderer = np.argsort(pmfs)
-            binom_scores[i,orderer] = np.array(signs)[orderer] * -1*np.log(np.cumsum(pmfs[orderer]))
+
+            pvals = np.cumsum(pmfs[orderer])
+            if multi_correct:
+                # use FWER to correct for testing many genes
+                pvals_corrected = 1-np.power(1-pvals, n_tests)
+                pvals_corrected[pvals<1e-10] = taylor_exp(pvals[pvals<1e-10], n_tests) # more accurate
+
+                pvals = pvals_corrected
+               #pvals = 1-np.power(1-pvals, n_tests)
+
+
+
+
+            binom_scores[i,orderer] = np.array(signs)[orderer] * -1*np.log(pvals)
             #
             # for j in range(k + 1):
             #
@@ -116,7 +148,7 @@ def info_score(X, nbhds, max_bins=float('inf'), two_tailed=True,
 
     if binom_scores is None or gene_bins is None:
         gene_bins, binom_scores = get_binom_scores(gene_probs, k, max_bins=max_bins, two_tailed=two_tailed,
-                                                   verbose=verbose, **kwargs)
+                                                   verbose=verbose, n_tests = X.shape[1], **kwargs)
 
     if fast_version:
         # compute significance of gene expression in each cell's neighborhood
