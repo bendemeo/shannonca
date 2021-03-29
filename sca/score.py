@@ -15,7 +15,7 @@ def taylor_exp(x, n):
            (1./6.)*np.power(x,3) * (n-2)*(n-1)*n-
            (1./24)*np.power(x,4)*(n-3)*(n-2)*(n-1)*n)
 
-def get_binom_scores(gene_probs, k, max_bins=500, two_tailed=True, verbose=True, scaled=False, n_tests=1, multi_correct=True):
+def get_binom_scores(gene_probs, k, max_bins=500,  verbose=True, scaled=False, n_tests=50, multi_correct=True, error_rate=1.0):
     # compute binom_test(x, k, p) for all x in 1:k and all p in gene_probs
     # if scaled, put more density in lower probabilities
     if max_bins < float('inf'):
@@ -34,7 +34,6 @@ def get_binom_scores(gene_probs, k, max_bins=500, two_tailed=True, verbose=True,
 
         binom_scores = np.zeros((len(splits), k+1))
 
-
         for i, p in enumerate(splits):
             if verbose:
                 print('\r computing binom scores for bin {}/{}'.format(i, len(splits)), end=' ')
@@ -48,6 +47,7 @@ def get_binom_scores(gene_probs, k, max_bins=500, two_tailed=True, verbose=True,
             pvals = np.cumsum(pmfs[orderer])
 
 
+
             if multi_correct:
                 # use FWER to correct for testing many genes
                 pvals_corrected = 1-np.power(1-pvals, n_tests)
@@ -55,6 +55,7 @@ def get_binom_scores(gene_probs, k, max_bins=500, two_tailed=True, verbose=True,
 
                 pvals = pvals_corrected
 
+            pvals[pvals > error_rate] = 1.  # p<error rate or it didn't happen
             binom_scores[i,orderer] = np.array(signs)[orderer] * -1*np.log(pvals)
 
             # else:
@@ -83,6 +84,8 @@ def get_binom_scores(gene_probs, k, max_bins=500, two_tailed=True, verbose=True,
             orderer = np.argsort(pmfs)
 
             pvals = np.cumsum(pmfs[orderer])
+
+
             if multi_correct:
                 # use FWER to correct for testing many genes
                 pvals_corrected = 1-np.power(1-pvals, n_tests)
@@ -91,8 +94,7 @@ def get_binom_scores(gene_probs, k, max_bins=500, two_tailed=True, verbose=True,
                 pvals = pvals_corrected
                #pvals = 1-np.power(1-pvals, n_tests)
 
-
-
+            pvals[pvals > error_rate] = 1.  # p<error rate or it didn't happen
 
             binom_scores[i,orderer] = np.array(signs)[orderer] * -1*np.log(pvals)
             #
@@ -109,9 +111,9 @@ def get_binom_scores(gene_probs, k, max_bins=500, two_tailed=True, verbose=True,
 
     return (gene_bins, binom_scores)
 
-def info_score(X, nbhds, max_bins=float('inf'), two_tailed=True,
+def info_score(X, nbhds, max_bins=float('inf'),
                entropy_normalize=False, fast_version=True, binom_scores=None, gene_bins=None,
-               return_bin_info=False, verbose=True, **kwargs):
+               return_bin_info=False, verbose=True, n_tests = 50, **kwargs):
     """
     :param X: sparse count matrix
     :param nbhds: list with indices of nearest neighbors for each obs in X, e.g. from kneighbors() in sklearn
@@ -147,8 +149,13 @@ def info_score(X, nbhds, max_bins=float('inf'), two_tailed=True,
 
 
     if binom_scores is None or gene_bins is None:
-        gene_bins, binom_scores = get_binom_scores(gene_probs, k, max_bins=max_bins, two_tailed=two_tailed,
-                                                   verbose=verbose, n_tests = X.shape[1], **kwargs)
+        if n_tests is None:
+            n_tests = X.shape[1] # multi-correct per cell
+        gene_bins, binom_scores = get_binom_scores(gene_probs, k, max_bins=max_bins,
+                                                   verbose=verbose, n_tests = n_tests, **kwargs)
+
+
+
 
     if fast_version:
         # compute significance of gene expression in each cell's neighborhood

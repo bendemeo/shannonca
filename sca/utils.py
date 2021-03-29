@@ -1,5 +1,6 @@
 import scanpy as sc
 import numpy as np
+from fbpca import pca
 
 def metagene_loadings(data, n_genes=10, rankby_abs=False, key='scalpel'):
     """
@@ -18,7 +19,7 @@ def metagene_loadings(data, n_genes=10, rankby_abs=False, key='scalpel'):
         loadings = data.varm[key+'_loadings']
         var_names = np.array(data.var_names)
 
-    loadings /= np.sum(loadings, axis=0) #normalize to percent contribution
+    loadings /= np.sum(np.abs(loadings), axis=0) #normalize to percent contribution
     loadings *= loadings.shape[0] # fold enrichment over expected
 
     if rankby_abs:
@@ -29,9 +30,7 @@ def metagene_loadings(data, n_genes=10, rankby_abs=False, key='scalpel'):
     genes = [var_names[np.array(x)] for x in idxs]
     scores = [loadings[x,i] for i, x in enumerate(idxs)]
 
+
     result = list(zip(genes, scores))
-    result = {i:{'genes':k[np.argsort(-1*v)], 'scores':np.flip(np.sort(v))} for i,(k,v) in enumerate(result)}
+    result = {i:{'genes':k[np.argsort(-1*v)], 'scores':v[np.argsort(-1*v)]} for i,(k,v) in enumerate(result)}
     return result
-
-
-
