@@ -30,7 +30,7 @@ def pancakes(n_pts=100, n_cor=2, n_anticor=2, n_noise=2, minor_fraction=0.5, ran
         mat = np.concatenate((split_dims, off_dims, noisy_dims), axis=1)
     else:
         mat = np.concatenate((split_dims, noisy_dims), axis=1)
-    print(mat.shape)
+    #print(mat.shape)
 
     adata = sc.AnnData(csr_matrix(mat))
 
@@ -38,7 +38,7 @@ def pancakes(n_pts=100, n_cor=2, n_anticor=2, n_noise=2, minor_fraction=0.5, ran
     labs[:np.floor(n_pts*minor_fraction).astype('int')] = 'rare'
     if dropout_clust:
         labs[-1*np.floor(n_pts*minor_fraction).astype('int'):] = 'dropout'
-    print(len(labs))
+    #print(len(labs))
 
     adata.obs['label'] = labs
     #adata.obs['label'] = [str(x) for x in np.array(split)+np.array(off)]

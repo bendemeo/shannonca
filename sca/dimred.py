@@ -1,17 +1,16 @@
 ### stuff that adds dimensionality reductions when called on a scanpy object
 import scanpy as sc
 from sklearn.neighbors import NearestNeighbors
-from sklearn.decomposition import PCA
 from .score import info_score
 import numpy as np
-from fbpca import pca
 from scipy.sparse import csr_matrix
 import warnings
 
-
 def reduce(X, n_comps = 50, iters=1, max_bins=float('inf'), fast_version=True, scaled_bins=False, nbhds=None,
            rep=None, nbhd_size=15, n_pcs=50, metric='cosine',
-           keep_scores=False, keep_loadings=False, keep_all_iters=False, verbose=True, **kwargs):
+           keep_scores=False, keep_loadings=False, keep_all_iters=False, verbose=False, **kwargs):
+
+
     """
     :param X: (num cells)x(num_genes)-sized array or sparse matrix to be dimensionality-reduced. Should be nonnegative,
     with 0 indicating no recorded transcripts (required for binarization and binomial inference).
@@ -54,6 +53,7 @@ def reduce(X, n_comps = 50, iters=1, max_bins=float('inf'), fast_version=True, s
 
         # add points to their own neighborhoods
         nbhds = np.concatenate((np.array(range(X.shape[0])).reshape(-1, 1), nbhds), axis=1)
+
 
     for i in range(iters):
         if verbose:
@@ -111,7 +111,7 @@ def reduce(X, n_comps = 50, iters=1, max_bins=float('inf'), fast_version=True, s
     return result
 
 
-def reduce_scanpy(adata, keep_scores=False, keep_loadings=True, keep_all_iters=False, layer=None, key_added='scalpel', iters=1, **kwargs):
+def reduce_scanpy(adata, keep_scores=False, keep_loadings=True, keep_all_iters=False, layer=None, key_added='sca', iters=1, **kwargs):
     if layer is not None:
         X = adata.layers[layer]
     else:
@@ -135,14 +135,13 @@ def reduce_scanpy(adata, keep_scores=False, keep_loadings=True, keep_all_iters=F
             adata.varm[key_added+'_loadings'] = dimred_info['loadings']
 
 
-
+###### DEPRECATED #########
 
 def info_pca(nbhd_size=15, n_neighbors=15, n_init_pcs=50, n_info_pcs=50, key_added='info_pca', metric='cosine',
              max_bins=float('inf'), iters=1, entropy_normalize=False, p_val=True,
-             keep_scores=True, binarize=False,  **kwargs):
+             keep_scores=True, binarize=False,  verbose=False, **kwargs):
 
-    warnings.warn('This function has been replaced by reduce_scanpy, and will not receive updates. '
-                  'Consider using reduce_scanpy instead.' )
+    warnings.warn('This function has been replaced by reduce and reduce_scanpy, and will soon be removed.' )
 
     def f(d):
         #sc.tl.pca(d, n_comps=n_init_pcs)
@@ -169,7 +168,8 @@ def info_pca(nbhd_size=15, n_neighbors=15, n_init_pcs=50, n_info_pcs=50, key_add
 
 
         for i in range(iters):
-            print('\niteration {}'.format(i))
+            if verbose:
+                print('\niteration {}'.format(i))
 
             if i==0:
                 #keep binomial scores for future runs

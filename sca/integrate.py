@@ -10,7 +10,7 @@ def correct(Xs, feat_names=None, n_features=1000, **kwargs):
     for i,X in enumerate(Xs):
         scores = reduce(X, keep_scores=True, **kwargs)['scores']
         gene_sigs = np.array(abs(scores).mean(axis=0)).flatten()
-        print(gene_sigs)
+        #print(gene_sigs)
         sigs[i,:] = gene_sigs
 
     gene_scores = np.mean(np.abs(sigs), axis=0)
@@ -27,7 +27,7 @@ def correct(Xs, feat_names=None, n_features=1000, **kwargs):
 def correct_scanpy(adata, batch_key='batch', n_features=1000, **kwargs):
     gene_sigs_dict = {}
     for i,batch in enumerate(np.unique(adata.obs[batch_key].tolist())):
-        print(batch)
+        #print(batch)
         abatch = adata[adata.obs[batch_key].values.astype('str')==str(batch),:].copy()
         reduce_scanpy(abatch, keep_scores=True, keep_loadings=False, **kwargs)
         gene_sigs = np.array(np.mean(np.abs(abatch.layers['scalpel_score'].todense()), axis=0)).flatten()

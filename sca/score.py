@@ -1,10 +1,6 @@
 from scipy.stats import binom_test, binom, entropy
 import numpy as np
 from scipy.sparse import csr_matrix
-import itertools
-from fbpca import pca
-from sklearn.neighbors import NearestNeighbors
-from sklearn.preprocessing import normalize
 
 
 def taylor_exp(x, n):
@@ -22,7 +18,8 @@ def get_binom_scores(gene_probs, k, max_bins=500,  verbose=True, scaled=False, n
         # split interval into max_bins bins
 
         if scaled:
-            print('using scaled bins')
+            if verbose:
+                print('using scaled bins')
             min_prob = np.min(gene_probs[gene_probs>0])
             precision = (min_prob)**(1./float(max_bins)) # fold accuracy in probability approx
             splits = precision ** (max_bins-(np.arange(max_bins)))
@@ -45,6 +42,8 @@ def get_binom_scores(gene_probs, k, max_bins=500,  verbose=True, scaled=False, n
             orderer = np.argsort(pmfs)
 
             pvals = np.cumsum(pmfs[orderer])
+
+
 
 
 
@@ -183,9 +182,12 @@ def info_score(X, nbhds, max_bins=float('inf'),
 
     else:
         for i in range(X.shape[0]):
-            if i < X.shape[0]-1:
-                print('\r computing counts for cell {}/{}'.format(i, X.shape[0]), end='         ')
-            else: print('\r computing counts for cell {}/{}'.format(i, X.shape[0]), end='         \n')
+
+            if verbose:
+                if i < X.shape[0]-1:
+                    print('\r computing counts for cell {}/{}'.format(i, X.shape[0]), end='         ')
+                else: print('\r computing counts for cell {}/{}'.format(i, X.shape[0]), end='         \n')
+
             nnbhd = X[nbhds[i], :]
 
             nbhd_size = len(nbhds[i])

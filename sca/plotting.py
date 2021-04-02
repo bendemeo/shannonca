@@ -33,12 +33,12 @@ def ordered_matrixplot(d, n_genes=5, groups=None, **kwargs):
 
     if groups is not None:
         ordered_top_mapping = {k:v for k, v in ordered_top_mapping.items() if k in groups}
-        print(ordered_top_mapping)
+        #print(ordered_top_mapping)
 
 
     sc.pl.matrixplot(d, var_names=ordered_top_mapping, groupby=grouping_key, **kwargs)
 
-def plot_metagenes(data, comps=None, key='scalpel', **kwargs):
+def plot_metagenes(data, comps=None, key='sca', **kwargs):
     if comps is None:
         if type(data) is dict:
             comps = list(range(data['loadings'].shape[1]))
