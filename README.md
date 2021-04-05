@@ -4,6 +4,20 @@ Shannon Components Analysis (formerly called scalpel) is a dimensionality reduct
 
 Required packages: scanpy, sklearn, numpy, scipy, fbpca, itertools
 
+## Installation
+SCA is available via pip:
+```pip install shannonca```
+### Dependencies
+SCA requires the following packages:
+*sklearn
+*scipy
+*numpy
+*matplotlib
+*pandas
+*seaborn
+*scanpy
+
+
 ## Usage
 ### Dimensionality Reduction
 SCA generates information score matrices, which are used to generate linear combinations of genes (metagenes) that are biologically informative. The package includes workflows both with and without Scanpy under `sca.dimred`.
