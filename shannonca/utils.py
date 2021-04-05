@@ -15,21 +15,20 @@ def metagene_loadings(data, n_genes=10, rankby_abs=False, key='sca'):
         loadings = data['loadings']
         var_names = np.array(list(range(loadings.shape[0])))
     else:
-        loadings = data.varm[key+'_loadings']
+        loadings = data.varm[key + '_loadings']
         var_names = np.array(data.var_names)
 
-    loadings /= np.sum(np.abs(loadings), axis=0) #normalize to percent contribution
-    loadings *= loadings.shape[0] # fold enrichment over expected
+    loadings /= np.sum(np.abs(loadings), axis=0)  # normalize to percent contribution
+    loadings *= loadings.shape[0]  # fold enrichment over expected
 
     if rankby_abs:
-        idxs = np.transpose(np.argsort(np.abs(loadings), axis=0)[(-1*n_genes):,:]).tolist()
+        idxs = np.transpose(np.argsort(np.abs(loadings), axis=0)[(-1 * n_genes):, :]).tolist()
     else:
-        idxs = np.transpose(np.argsort(loadings, axis=0)[(-1 * n_genes):,:]).tolist()
+        idxs = np.transpose(np.argsort(loadings, axis=0)[(-1 * n_genes):, :]).tolist()
 
     genes = [var_names[np.array(x)] for x in idxs]
-    scores = [loadings[x,i] for i, x in enumerate(idxs)]
-
+    scores = [loadings[x, i] for i, x in enumerate(idxs)]
 
     result = list(zip(genes, scores))
-    result = {i:{'genes':k[np.argsort(-1*v)], 'scores':v[np.argsort(-1*v)]} for i,(k,v) in enumerate(result)}
+    result = {i: {'genes': k[np.argsort(-1 * v)], 'scores': v[np.argsort(-1 * v)]} for i, (k, v) in enumerate(result)}
     return result
