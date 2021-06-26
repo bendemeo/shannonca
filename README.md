@@ -9,6 +9,7 @@ SCA is available via pip:
 ```pip install shannonca```
 ### Dependencies
 SCA requires the following packages:
+
 *sklearn
 *scipy
 *numpy
@@ -16,6 +17,7 @@ SCA requires the following packages:
 *pandas
 *seaborn
 *scanpy
+*fbpca
 
 
 ## Usage
