@@ -10,14 +10,14 @@ SCA is available via pip:
 ### Dependencies
 SCA requires the following packages:
 
-*sklearn
-*scipy
-*numpy
-*matplotlib
-*pandas
-*seaborn
-*scanpy
-*fbpca
+* sklearn
+* scipy
+* numpy
+* matplotlib
+* pandas
+* seaborn
+* scanpy
+* fbpca
 
 
 ## Usage
