@@ -2,7 +2,6 @@ from .dimred import reduce, reduce_scanpy
 import numpy as np
 import pandas as pd
 
-
 def correct(Xs, feat_names=None, n_features=1000, **kwargs):
     if feat_names is None:
         feat_names = range(Xs[0].shape[1])

@@ -1,13 +1,15 @@
 import scanpy as sc
 from sklearn.neighbors import NearestNeighbors
-from .score import info_score
+from .score import info_score, bootstrapped_ntests
 import numpy as np
 from scipy.sparse import csr_matrix
+from scipy import sparse
 
 
 def reduce(X, n_comps=50, iters=1, max_bins=float('inf'), fast_version=True, scaled_bins=False, nbhds=None,
-           rep=None, nbhd_size=15, n_pcs=50, metric='cosine',
-           keep_scores=False, keep_loadings=False, keep_all_iters=False, verbose=False, **kwargs):
+           rep=None, nbhd_size=15, n_pcs=50, metric='euclidean', model='wilcoxon',
+           keep_scores=False, keep_loadings=False, keep_all_iters=False, verbose=False, n_tests = 'auto',
+           seed=10,  **kwargs):
     """
     :param X: (num cells)x(num_genes)-sized array or sparse matrix to be dimensionality-reduced. Should be nonnegative,
     with 0 indicating no recorded transcripts (required for binarization and binomial inference).
@@ -36,6 +38,10 @@ def reduce(X, n_comps=50, iters=1, max_bins=float('inf'), fast_version=True, sca
     :return: If return_scores or return_loadings are both false, a (n cells)x(n_comps)-dimensional array
     of reduced features. Otherwise, a dictionary with keys 'reduction', 'scores' and/or 'loadings'.
     """
+    if n_tests == 'auto':
+        n_tests = bootstrapped_ntests(X, model=model, k=nbhd_size, seed=seed, **kwargs)
+        if verbose:
+            print('multi-testing correction for {} features'.format(n_tests))
 
     result = {}  # final result, if return_all_iters=True
 
@@ -55,7 +61,17 @@ def reduce(X, n_comps=50, iters=1, max_bins=float('inf'), fast_version=True, sca
         if verbose:
             print('\niteration {}'.format(i + 1))
 
-        if i == 0:
+        if model != 'binomial': #don't return bin info
+            infos = info_score(X, nbhds,
+                                                        max_bins=max_bins,
+                                                        return_bin_info=True,
+                                                        fast_version=fast_version,
+                                                        verbose=verbose,
+                                                        scaled=scaled_bins,
+                                                        model=model,
+                                                        n_tests=n_tests,
+                                                        **kwargs)
+        elif i == 0:
             # keep binomial scores for future runs
             infos, gene_bins, binom_scores = info_score(X, nbhds,
                                                         max_bins=max_bins,
@@ -63,6 +79,8 @@ def reduce(X, n_comps=50, iters=1, max_bins=float('inf'), fast_version=True, sca
                                                         fast_version=fast_version,
                                                         verbose=verbose,
                                                         scaled=scaled_bins,
+                                                        model=model,
+                                                        n_tests=n_tests,
                                                         **kwargs)
         else:
             infos = info_score(X, nbhds,
@@ -72,7 +90,10 @@ def reduce(X, n_comps=50, iters=1, max_bins=float('inf'), fast_version=True, sca
                                fast_version=fast_version,
                                verbose=verbose,
                                scaled=scaled_bins,
+                               model=model,
+                               n_tests=n_tests,
                                **kwargs)
+
 
         a, bt, c, d = sc.tl.pca(infos, n_comps=n_comps, return_info=True)
 
@@ -80,6 +101,13 @@ def reduce(X, n_comps=50, iters=1, max_bins=float('inf'), fast_version=True, sca
 
         current_dimred = X @ bt.transpose()  # metagene expression values in X
 
+        # if scale_scs:
+        #     norms = infos @ csr_matrix(bt.transpose())
+        #     norms = sparse.linalg.norm(norms, axis=0, ord=2)
+        #     print(norms)
+        #     print(current_dimred.shape)
+        #     print(norms.shape)
+        #     current_dimred = current_dimred * norms
         if keep_all_iters:
             result['reduction_{}'.format(i + 1)] = current_dimred
 
@@ -105,14 +133,15 @@ def reduce(X, n_comps=50, iters=1, max_bins=float('inf'), fast_version=True, sca
 
 
 def reduce_scanpy(adata, keep_scores=False, keep_loadings=True, keep_all_iters=False, layer=None, key_added='sca',
-                  iters=1, **kwargs):
+                  iters=1, model='binomial',**kwargs):
     if layer is not None:
         X = adata.layers[layer]
     else:
         X = adata.X
 
+
     dimred_info = reduce(X, keep_scores=keep_scores, keep_loadings=keep_loadings,
-                         keep_all_iters=keep_all_iters, iters=iters, **kwargs)
+                         keep_all_iters=keep_all_iters, iters=iters, model=model, **kwargs)
 
     if not keep_scores and not keep_loadings and not keep_all_iters:
         adata.obsm['X_'+key_added] = dimred_info

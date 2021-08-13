@@ -6,6 +6,7 @@ import pandas as pd
 import seaborn as sns
 
 
+
 def ordered_matrixplot(d, n_genes=5, groups=None, **kwargs):
     """
     matrix plot of ranked groups, with columns ordered by score instead of abs(score).
