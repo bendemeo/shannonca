@@ -9,13 +9,15 @@ SCA is available via pip:
 ```pip install shannonca```
 ### Dependencies
 SCA requires the following packages:
-*sklearn
-*scipy
-*numpy
-*matplotlib
-*pandas
-*seaborn
-*scanpy
+
+* sklearn
+* scipy
+* numpy
+* matplotlib
+* pandas
+* seaborn
+* scanpy
+* fbpca
 
 
 ## Usage
@@ -25,7 +27,7 @@ SCA generates information score matrices, which are used to generate linear comb
 #### Without Scanpy
 The `reduce` function accepts a (num genes) x (num cells) matrix X, and outputs a dimensionality-reduced version with fewer features. The input matrix may be normalized or otherwise processed, but a zero in the input matrix must indicate zero recorded transcripts.
 ```
-from sca.dimred import reduce
+from shannonca.dimred import reduce
 
 X = mmread('mydata.mtx').transpose() # read some dataset
 
@@ -39,7 +41,7 @@ The starting representation by default is a PCA representation with 50 component
 Scanpy (https://github.com/theislab/scanpy) is a commonly-used single-cell workflow. To compute a reduction in place on a scanpy AnnData object, use `reduce_scanpy`:
 ```
 import scanpy as sc
-from sca.dimred import reduce_scanpy
+from shannonca.dimred import reduce_scanpy
 
 adata = sc.AnnData(X)
 reduce_scanpy(adata, keep_scores=True, keep_loadings=True, keep_all_iters=True, layer=None, key_added='sca', iters=1, n_comps=50, n_pcs=50)
@@ -51,7 +53,7 @@ This function shares all parameters with `reduce`, but instead of returning the 
 First, construct a reducer using the `info_pca` function.
 
 ```
-from sca.dimred import info_pca
+from shannonca.dimred import info_pca
 reducer = info_pca(nbhd_size=15, n_neighbors=15, n_init_pcs=50, n_info_pcs=50, key_added='info_pca', metric='cosine',
              max_bins=float('inf'), iters=1)
 ```
