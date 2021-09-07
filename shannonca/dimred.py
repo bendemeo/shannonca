@@ -9,13 +9,31 @@ from .correctors import FWERCorrector
 from .embedders import SCAEmbedder
 from .connectors import MetricConnector, Connector
 
-def reduce(X, n_comps=50, iters=1, max_bins=float('inf'), fast_version=True, scaled_bins=False, nbhds=None,
-           rep=None, nbhd_size=15, n_pcs=50, metric='euclidean', model='wilcoxon',
+def reduce(X, n_comps=50, iters=1, nbhds=None,
+           nbhd_size=15,  metric='euclidean', model='wilcoxon',
            keep_scores=False, keep_loadings=False, keep_all_iters=False, verbose=False, n_tests = 'auto',
            seed=10,  chunk_size=None, **kwargs):
+    """
+    :param X: (num cells)x(num_genes)-sized array or sparse matrix to be dimensionality-reduced. Should be nonnegative,
+    with 0 indicating no recorded transcripts (required for binarization and binomial inference).
+    :param n_comps: Desired dimensionality of the reduction.
+    :param iters: Number of iterations of SCA. More iterations usually strengthens signal, stabilizing around 3-5
+    :param nbhd_size: Size of neighborhoods used to assess the local expression of a gene. Should be smaller than the
+    smallest subpopulation; default is 15. Does not drastically affect the
+    :param nbhds: Optional - if k-neighborhoods of points are already determined, they can be specified here as
+    a (num_cells)*k array. Otherwise, they will be computed from the PCS.
+    :param metric: Metric used to compute k-nearest neighbor graphs for SCA score computation.
+    :param keep_scores: if True, returns information scores for each gene/cell combo in a sparse matrix.
+    :param keep_loadings: If True, returns loadings of each gene in each metagene as a dense matrix.
+    :param verbose: If True, print progress.
+    :param kwargs: Other arguments to be passed to the scoring function
+    :param n_tests: Degree of FWER multiple-testing correction. Set to "auto" (default) to automatically determine
+    :return: If return_scores or return_loadings are both false, a (n cells)x(n_comps)-dimensional array
+    of reduced features. Otherwise, a dictionary with keys 'reduction', 'scores' and/or 'loadings'.
+    """
 
     if n_tests == 'auto':
-        n_tests = bootstrapped_ntests(X, model=model, k=nbhd_size, seed=seed, **kwargs)
+        n_tests = bootstrapped_ntests(X, model=model, k=nbhd_size, seed=seed)
         if verbose:
             print('multi-testing correction for {} features'.format(n_tests))
     result = {}
@@ -42,7 +60,7 @@ def reduce(X, n_comps=50, iters=1, max_bins=float('inf'), fast_version=True, sca
     else:
         connector = MetricConnector(n_neighbors=nbhd_size, metric=metric, include_self=True)
 
-    embedder = SCAEmbedder(scorer=scorer, connector=connector, n_comps=n_comps, iters=iters)
+    embedder = SCAEmbedder(scorer=scorer, connector=connector, n_comps=n_comps, iters=iters, nbhds=nbhds)
     dimred = embedder.embed(X, keep_scores=keep_scores, keep_loadings=keep_loadings, keep_all_iters=keep_all_iters)
 
     if not keep_scores and not keep_loadings and not keep_all_iters:

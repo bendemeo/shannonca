@@ -30,7 +30,7 @@ class test_embedders(unittest.TestCase):
 
         result = embedder.embed(self.testData, keep_scores=True, keep_all_iters=True, keep_loadings=True)
 
-        result_old = reduce(self.testData, n_comps=50, iters=5, n_tests=10, nbhd_size=10,
+        result_old = reduce_old(self.testData, n_comps=50, iters=5, n_tests=10, nbhd_size=10,
                             n_pcs=50, metric='euclidean', model='wilcoxon', keep_scores=True)
 
         # make sure it's the same as the old one.
@@ -57,7 +57,7 @@ class test_embedders(unittest.TestCase):
         #make sure new modular reducer matches old reducer in output.
 
         res_new = reduce(self.testData, n_comps=50, iters=5, n_tests=10, nbhd_size=10,
-                            n_pcs=50, metric='euclidean', model='binomial', keep_scores=True,
+                         metric='euclidean', model='binomial', keep_scores=True,
                          keep_all_iters=True)
 
         res_old = reduce_old(self.testData, n_comps=50, iters=5, n_tests=10, nbhd_size=10,
