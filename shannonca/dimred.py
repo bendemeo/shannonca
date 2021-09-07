@@ -19,7 +19,8 @@ def reduce(X, n_comps=50, iters=1, nbhds=None,
     :param n_comps: Desired dimensionality of the reduction.
     :param iters: Number of iterations of SCA. More iterations usually strengthens signal, stabilizing around 3-5
     :param nbhd_size: Size of neighborhoods used to assess the local expression of a gene. Should be smaller than the
-    smallest subpopulation; default is 15. Does not drastically affect the
+    smallest subpopulation; default is 15. Does not drastically affect the output
+    :param model: Model used to test for local enrichment of genes, used to compute information scores.
     :param nbhds: Optional - if k-neighborhoods of points are already determined, they can be specified here as
     a (num_cells)*k array. Otherwise, they will be computed from the PCS.
     :param metric: Metric used to compute k-nearest neighbor graphs for SCA score computation.
