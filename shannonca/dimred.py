@@ -4,9 +4,89 @@ from .score import info_score, bootstrapped_ntests
 import numpy as np
 from scipy.sparse import csr_matrix
 from scipy import sparse
-
+from .scorers import Scorer, WilcoxonScorer, BinomialScorer, ChunkedScorer, TScorer
+from .correctors import FWERCorrector
+from .embedders import SCAEmbedder
+from .connectors import MetricConnector, Connector
 
 def reduce(X, n_comps=50, iters=1, max_bins=float('inf'), fast_version=True, scaled_bins=False, nbhds=None,
+           rep=None, nbhd_size=15, n_pcs=50, metric='euclidean', model='wilcoxon',
+           keep_scores=False, keep_loadings=False, keep_all_iters=False, verbose=False, n_tests = 'auto',
+           seed=10,  chunk_size=None, **kwargs):
+
+    if n_tests == 'auto':
+        n_tests = bootstrapped_ntests(X, model=model, k=nbhd_size, seed=seed, **kwargs)
+        if verbose:
+            print('multi-testing correction for {} features'.format(n_tests))
+    result = {}
+
+    corrector = FWERCorrector(n_tests=n_tests)
+
+    if issubclass(type(model), Scorer):
+        # can directly specify model or give a string to construct one.
+        scorer = model
+    elif model == 'wilcoxon':
+        scorer = WilcoxonScorer(corrector=corrector, verbose=verbose, **kwargs)
+    elif model == 'binomial':
+        scorer = BinomialScorer(corrector=corrector, verbose=verbose, **kwargs)
+    elif model == 'ttest':
+        scorer = TScorer(corrector=corrector, verbose=verbose, **kwargs)
+    else:  # break
+        assert(False, 'scorer not found')
+
+    if chunk_size is not None:
+        scorer = ChunkedScorer(base_scorer=scorer, chunk_size=chunk_size)
+
+    if issubclass(type(metric), Connector):
+        connector = metric
+    else:
+        connector = MetricConnector(n_neighbors=nbhd_size, metric=metric, include_self=True)
+
+    embedder = SCAEmbedder(scorer=scorer, connector=connector, n_comps=n_comps, iters=iters)
+    dimred = embedder.embed(X, keep_scores=keep_scores, keep_loadings=keep_loadings, keep_all_iters=keep_all_iters)
+
+    if not keep_scores and not keep_loadings and not keep_all_iters:
+        return dimred
+
+    result = {}
+    if not keep_all_iters:
+        result['reduction'] = dimred  # store result
+    else:
+        result.update({('reduction_'+str(i)):j for i,j in embedder.embedding_dict.items()})
+    if keep_scores:
+        result['scores'] = embedder.scores
+    if keep_loadings:
+        result['loadings'] = embedder.loadings
+
+    return result
+
+def reduce_scanpy(adata, keep_scores=False, keep_loadings=True, keep_all_iters=False, layer=None, key_added='sca',
+                  iters=1, model='binomial',**kwargs):
+    if layer is not None:
+        X = adata.layers[layer]
+    else:
+        X = adata.X
+
+    dimred_info = reduce(X, keep_scores=keep_scores, keep_loadings=keep_loadings,
+                         keep_all_iters=keep_all_iters, iters=iters, model=model, **kwargs)
+
+    if not keep_scores and not keep_loadings and not keep_all_iters:
+        adata.obsm['X_'+key_added] = dimred_info
+    else:
+        if keep_all_iters:
+            for i in range(iters):
+                adata.obsm['X_'+key_added + '_' + str(i + 1)] = dimred_info['reduction_{}'.format(i + 1)]
+        else:
+            adata.obsm['X_'+key_added] = dimred_info['reduction']
+
+        if 'scores' in dimred_info:
+            adata.layers[key_added + '_score'] = dimred_info['scores']
+        if 'loadings' in dimred_info:
+            adata.varm[key_added + '_loadings'] = dimred_info['loadings']
+
+##### DEPRECATED, left in temporarily to ensure new method outputs match old method outputs. ######
+
+def reduce_old(X, n_comps=50, iters=1, max_bins=float('inf'), fast_version=True, scaled_bins=False, nbhds=None,
            rep=None, nbhd_size=15, n_pcs=50, metric='euclidean', model='wilcoxon',
            keep_scores=False, keep_loadings=False, keep_all_iters=False, verbose=False, n_tests = 'auto',
            seed=10,  **kwargs):
@@ -47,7 +127,10 @@ def reduce(X, n_comps=50, iters=1, max_bins=float('inf'), fast_version=True, sca
 
     if nbhds is None:
         if rep is None:
-            rep = sc.tl.pca(X, n_comps=n_pcs)
+            a, bt, c, d = sc.tl.pca(X, n_comps=n_pcs, return_info=True)
+            rep =  X @ bt.transpose()
+
+            #rep = sc.tl.pca(X, n_comps=n_pcs)
 
         nn = NearestNeighbors(n_neighbors=nbhd_size, metric=metric)
         nn.fit(rep)
@@ -130,102 +213,3 @@ def reduce(X, n_comps=50, iters=1, max_bins=float('inf'), fast_version=True, sca
         result['loadings'] = bt.transpose()
 
     return result
-
-
-def reduce_scanpy(adata, keep_scores=False, keep_loadings=True, keep_all_iters=False, layer=None, key_added='sca',
-                  iters=1, model='binomial',**kwargs):
-    if layer is not None:
-        X = adata.layers[layer]
-    else:
-        X = adata.X
-
-
-    dimred_info = reduce(X, keep_scores=keep_scores, keep_loadings=keep_loadings,
-                         keep_all_iters=keep_all_iters, iters=iters, model=model, **kwargs)
-
-    if not keep_scores and not keep_loadings and not keep_all_iters:
-        adata.obsm['X_'+key_added] = dimred_info
-    else:
-        if keep_all_iters:
-            for i in range(iters):
-                adata.obsm['X_'+key_added + '_' + str(i + 1)] = dimred_info['reduction_{}'.format(i + 1)]
-        else:
-            adata.obsm['X_'+key_added] = dimred_info['reduction']
-
-        if 'scores' in dimred_info:
-            adata.layers[key_added + '_score'] = dimred_info['scores']
-        if 'loadings' in dimred_info:
-            adata.varm[key_added + '_loadings'] = dimred_info['loadings']
-
-# DEPRECATED
-
-# def info_pca(nbhd_size=15, n_neighbors=15, n_init_pcs=50, n_info_pcs=50, key_added='sca', metric='cosine',
-#              max_bins=float('inf'), iters=1, entropy_normalize=False, p_val=True,
-#              keep_scores=True, binarize=False, verbose=False, **kwargs):
-#     warnings.warn('This function has been replaced by reduce and reduce_scanpy, and will soon be removed.')
-#
-#     def f(d):
-#         # sc.tl.pca(d, n_comps=n_init_pcs)
-#
-#         if binarize:
-#             pcs = sc.tl.pca((d.X > 0).astype('float'), n_comps=n_init_pcs)
-#             d.obsm['X_pca'] = pcs
-#             # U,s,Vt = pca((d.X>0).astype('float'), k=n_init_pcs, n_iter=pc_iters)
-#             # pcs = U*s
-#         else:
-#             # U,s,Vt = pca(d.X, k=n_init_pcs, n_iter=5)
-#             # pcs = U*s
-#             # d.obsm['X_pca'] = pcs
-#             sc.tl.pca(d, n_comps=n_init_pcs)
-#             pcs = d.obsm['X_pca']
-#
-#         nn = NearestNeighbors(n_neighbors=nbhd_size, metric=metric)
-#         nn.fit(pcs)
-#         nbhds = nn.kneighbors(return_distance=False)
-#
-#         # add points to their own neighborhoods
-#         nbhds = np.concatenate((np.array(range(d.shape[0])).reshape(-1, 1), nbhds), axis=1)
-#
-#         for i in range(iters):
-#             if verbose:
-#                 print('\niteration {}'.format(i))
-#
-#             if i == 0:
-#                 # keep binomial scores for future runs
-#                 infos, gene_bins, binom_scores = info_score((d.X > 0).astype('float'), nbhds,
-#                                                             max_bins=max_bins, entropy_normalize=entropy_normalize,
-#                                                             return_bin_info=True, **kwargs)
-#             else:
-#                 infos = info_score((d.X > 0).astype('float'), nbhds, max_bins=max_bins,
-#                                    binom_scores=binom_scores, gene_bins=gene_bins, **kwargs)
-#
-#             a, bt, c, dt = sc.tl.pca(infos, n_comps=n_info_pcs, return_info=True)
-#             # U, s, Vt = pca(infos, k=n_info_pcs, raw=True)
-#
-#             if binarize:
-#                 X = (d.X > 0).astype('float').todense()
-#
-#                 d.obsm[key_added] = X @ bt.transpose()
-#                 # np.matmul(X, Vt.transpose())
-#             else:
-#                 d.obsm[key_added] = d.X @ bt.transpose()
-#
-#             d.varm[key_added + '_loadings'] = bt.transpose()
-#
-#             # print(d.obsm[key_added].shape)
-#
-#             nn = NearestNeighbors(n_neighbors=nbhd_size)
-#             nn.fit(d.obsm[key_added])
-#
-#             dist, nbhds = nn.kneighbors()
-#             nbhds = np.concatenate((np.array(range(d.shape[0])).reshape(-1, 1), nbhds), axis=1)
-#
-#         sc.pp.neighbors(d, use_rep=key_added, key_added=key_added, metric=metric, n_neighbors=n_neighbors)
-#
-#         if keep_scores:
-#             # info_df = pd.DataFrame(infos)
-#             # info_df.columns = d.var.index
-#             # info_df.index = d.obs.index
-#             d.layers[key_added + '_score'] = csr_matrix(infos)
-#
-#     return f

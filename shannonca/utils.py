@@ -5,6 +5,52 @@ import scanpy as sc
 from sklearn.neighbors import NearestNeighbors
 import matplotlib.pyplot as plt
 
+def bootstrapped_ntests(X, trials=1000, k=15, scorer=None, return_all=False, seed=None, **kwargs):
+    np.random.seed(seed)
+    random_nbhds = np.random.choice(X.shape[0], size=(trials, k), replace=True)
+    nbhd_scores = info_score(X, random_nbhds, n_tests=1, model=model, **kwargs)
+    nbhd_ps = np.exp(-1 * np.abs(nbhd_scores.todense()))
+
+    nbhd_minps = np.min(nbhd_ps, axis=1).A.flatten()
+
+    sorted_minps = sorted(nbhd_minps)
+
+    # empirical frequencies of low minimum p-values
+    xvals = np.array(sorted_minps)
+    yvals = np.arange(len(sorted_minps)) / len(sorted_minps)
+
+
+    log1m_xvals = np.log(1 - xvals)
+    log1m_yvals = np.log(1 - yvals)
+    log1m_xvals[xvals<1e-10] = log1m_taylor(xvals[xvals<1e-10])
+
+    xvals = log1m_xvals
+    yvals = log1m_yvals
+
+    # linear fit
+    coef = np.mean(np.multiply(np.array(xvals), np.array(yvals))) / np.mean(np.power(np.array(xvals), 2))
+    if return_all:
+        return((xvals, yvals, np.ceil(coef).astype('int')))
+    else:
+        return(np.ceil(coef).astype('int'))
+
+def to_sparse_adjacency(nbhds, n_cells=None):
+    if type(nbhds) is np.ndarray:
+        nbhds = nbhds.tolist()
+
+    # make nbhd adjacency matrix
+    data = np.ones(np.sum([len(x) for x in nbhds]))
+
+    col_ind = [item for sublist in nbhds for item in sublist]
+    row_ind = [i for i, sublist in enumerate(nbhds) for item in sublist]
+
+    if n_cells is None:
+        n_cells = np.max(col_ind)+1 # infer based on neighbor indices
+
+    # sparse adjacency matrix of NN graph
+    nn_matrix = csr_matrix((data, (row_ind, col_ind)), shape=(len(nbhds), n_cells))
+    return(nn_matrix)
+
 def metagene_loadings(data, n_genes=10, rankby_abs=False, key='sca'):
     """
     return the top-loaded genes for each Scalpel metagene

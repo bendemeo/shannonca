@@ -149,7 +149,7 @@ def get_binom_scores(gene_probs, k, max_bins=500, verbose=True, scaled=False, n_
 
 def info_score(X, nbhds, max_bins=float('inf'),
                entropy_normalize=False, fast_version=True, binom_scores=None, gene_bins=None,
-               return_bin_info=False, verbose=True, n_tests='auto', model='binomial',
+               return_bin_info=False, verbose=True, n_tests='auto', model='wilcoxon',
                chunk_size=1000, **kwargs):
     """
     :param X: sparse count matrix
