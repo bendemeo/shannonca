@@ -11,3 +11,5 @@ shannonca (Shannon Component analysis) uses a probabilistic model for local feat
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+   
+   api
