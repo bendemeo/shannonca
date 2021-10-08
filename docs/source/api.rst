@@ -1,5 +1,5 @@
 Top-level API
-===
+=============
 .. module:: shannonca
 .. currentmodule:: shannonca
 
