@@ -2,11 +2,12 @@ version: 2
 
 python:
   version: "3.8"
+  install:
+  - method: pip
+    path: ./shannonca
 
 sphinx:
   fail_on_warning: true
   configuration: docs/source/conf.py
 
-install:
-  - method: pip
-    path: ./shannonca
+
