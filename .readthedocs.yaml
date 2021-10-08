@@ -1,0 +1,11 @@
+version: 0.0.6
+
+python:
+  version: "3.8"
+
+sphinx:
+  fail_on_warning: true
+
+install:
+  - method: pip
+    path: ./shannonca
