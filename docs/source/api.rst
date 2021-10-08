@@ -1,6 +1,12 @@
-API
+Top-level API
 ===
-.. autosummary::
-   :toctree: generated
+.. module:: shannonca
+.. currentmodule:: shannonca
 
-   shannonca
+Dimensionality Reduction: dimred
+------------------
+.. autosummary::
+   :toctree: generated/
+   
+   dimred.reduce
+   dimred.reduce_scanpy
