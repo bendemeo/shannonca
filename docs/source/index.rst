@@ -7,6 +7,8 @@ Welcome to shannonca's documentation!
 =====================================
 shannonca (Shannon Component analysis) uses a probabilistic model for local feature enrichment or depletion to compute an informative dimensionality reduction of the input data. In single-cell data.
 
+Contents
+--------
 
 .. toctree::
 
