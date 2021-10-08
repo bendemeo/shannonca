@@ -24,13 +24,13 @@ class test_embedders(unittest.TestCase):
     def test_SCAEmbedder(self):
         corrector = FWERCorrector(n_tests=10)
         scorer = WilcoxonScorer(corrector=corrector)
-        connector = MetricConnector(n_neighbors=10, metric='euclidean', include_self=True)
+        connector = MetricConnector(n_neighbors=15, metric='euclidean', include_self=True)
 
         embedder = SCAEmbedder(scorer=scorer, connector=connector, n_comps=50, iters=5)
 
         result = embedder.embed(self.testData, keep_scores=True, keep_all_iters=True, keep_loadings=True)
 
-        result_old = reduce_old(self.testData, n_comps=50, iters=5, n_tests=10, nbhd_size=10,
+        result_old = reduce_old(self.testData, n_comps=50, iters=5, n_tests=10, nbhd_size=15,
                             n_pcs=50, metric='euclidean', model='wilcoxon', keep_scores=True)
 
         # make sure it's the same as the old one.

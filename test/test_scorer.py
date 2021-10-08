@@ -55,6 +55,11 @@ class test_scorers(unittest.TestCase):
         self.assertTrue((unchunked_scores==fixedchunk_scores).all())
         self.assertTrue((fixedchunk_scores==unchunked_scores).all())
 
+    def test_Tf_idfScorer(self):
+        scorer = Tf_idfScorer()
+        scores = scorer.score(self.testData).todense()
+        sns.heatmap(scores)
+
 
 
 

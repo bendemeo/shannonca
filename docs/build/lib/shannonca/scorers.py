@@ -5,7 +5,6 @@ from scipy.sparse import csr_matrix, hstack
 from scipy.stats import norm, binom, ttest_ind_from_stats
 import sys
 
-
 class Scorer:
     def __init__(self, corrector=None, seed=None, verbose=False):
         self.corrector = corrector
@@ -18,20 +17,6 @@ class Scorer:
         #     self.n_tests = 1
         #     self.n_tests = bootstrapped_ntests(X, scorer=self, return_all=False, seed=self.seed)
         pass
-
-
-class Tf_idfScorer(Scorer):
-
-    def score(self, X, nbhds = None):
-        #nbhds is ignored; just TF-IDF transform the data.
-
-        X_binarized = (X>0).astype("float")
-        counts = X_binarized.sum(axis=0).A.flatten()
-        idfs = np.ones(len(counts))
-        idfs[counts>0] = np.log(X.shape[0]/counts[counts>0])
-
-        scores = X.multiply(idfs)
-        return(scores)
 
 class BinomialScorer(Scorer):
     def __init__(self, corrector=None, seed=None, verbose=False, scaled=False,
@@ -230,6 +215,7 @@ class TScorer(Scorer):
 
         return (csr_matrix(wts))
 
+
 class WilcoxonScorer(Scorer):
     def __init__(self, corrector = None, seed=None, verbose=False):
         super().__init__(corrector, seed, verbose)
@@ -312,5 +298,5 @@ class ChunkedScorer(Scorer):
 
             wt_blocks.append(self.base_scorer.score(X_chunk, nbhds=nbhds, nn_matrix=nn_matrix, **kwargs))
 
-        return (csr_matrix(hstack(wt_blocks)))
+        return (hstack(wt_blocks))
 

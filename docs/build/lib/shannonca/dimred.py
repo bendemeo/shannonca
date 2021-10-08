@@ -14,45 +14,30 @@ def reduce(X, n_comps=50, iters=1, nbhds=None,
            keep_scores=False, keep_loadings=False, keep_all_iters=False, verbose=False, n_tests = 'auto',
            seed=10,  chunk_size=None, **kwargs):
     """
-    Compute an SCA reduction of the input data
-
-    :param X: (num cells)x(num_genes)-sized array or sparse matrix to be dimensionality-reduced.
-    :type X: numpy.ndarray | scipy.spmatrix
-    :param n_comps: Desired dimensionality of the reduction. Default 50
-    :type n_comps: int
+    :param X: (num cells)x(num_genes)-sized array or sparse matrix to be dimensionality-reduced. Should be nonnegative,
+    with 0 indicating no recorded transcripts (required for binarization and binomial inference).
+    :param n_comps: Desired dimensionality of the reduction.
     :param iters: Number of iterations of SCA. More iterations usually strengthens signal, stabilizing around 3-5
-    :type iters: int
     :param nbhd_size: Size of neighborhoods used to assess the local expression of a gene. Should be smaller than the
-    smallest subpopulation; default is 15.
-    :type nbhd_size: int
+    smallest subpopulation; default is 15. Does not drastically affect the output
     :param model: Model used to test for local enrichment of genes, used to compute information scores.
-        One of ["wilcoxon","binomial","ttest"], default "wilcoxon" (recommended).
-    :type model: str
     :param nbhds: Optional - if k-neighborhoods of points are already determined, they can be specified here as
-    a (num_cells)*k array or list. Otherwise, they will be computed from the PCA embedding. Default None
-    :type nbhds: numpy.ndarray | list
-    :param metric: Metric used to compute k-nearest neighbor graphs for SCA score computation. Default "euclidean".
-        See sklearn.neighbors.DistanceMetric for list of choices.
-    :type metric: str
-    :param keep_scores: if True, keep and return the information score matrix. Default False.
-    :type keep_scores: bool
-    :param keep_loadings: If True, returns loadings of each gene in each metagene as a dense matrix. Default False.
-    :type keep_loadings: bool
-    :param verbose: If True, print progress. Default False
-    :type verbose: bool
-    :param n_tests: Effective number of independent genes per cell, use for FWER multiple testing correction.
-        Set to "auto" to automatically determine by bootstrapping. Default "auto".
-    :type n_tests: str | int
-    :param kwargs: Other arguments to be passed to the chosen scorer
+    a (num_cells)*k array. Otherwise, they will be computed from the PCS.
+    :param metric: Metric used to compute k-nearest neighbor graphs for SCA score computation.
+    :param keep_scores: if True, returns information scores for each gene/cell combo in a sparse matrix.
+    :param keep_loadings: If True, returns loadings of each gene in each metagene as a dense matrix.
+    :param verbose: If True, print progress.
+    :param kwargs: Other arguments to be passed to the scoring function
+    :param n_tests: Degree of FWER multiple-testing correction. Set to "auto" (default) to automatically determine
     :return: If return_scores or return_loadings are both false, a (n cells)x(n_comps)-dimensional array
     of reduced features. Otherwise, a dictionary with keys 'reduction', 'scores' and/or 'loadings'.
-    :rtype: numpy.ndarray | dict
     """
 
     if n_tests == 'auto':
         n_tests = bootstrapped_ntests(X, model=model, k=nbhd_size, seed=seed)
         if verbose:
             print('multi-testing correction for {} features'.format(n_tests))
+    result = {}
 
     corrector = FWERCorrector(n_tests=n_tests)
 
@@ -66,7 +51,7 @@ def reduce(X, n_comps=50, iters=1, nbhds=None,
     elif model == 'ttest':
         scorer = TScorer(corrector=corrector, verbose=verbose, **kwargs)
     else:  # break
-        assert False, 'scorer not found' #TODO fix
+        assert(False, 'scorer not found')
 
     if chunk_size is not None:
         scorer = ChunkedScorer(base_scorer=scorer, chunk_size=chunk_size)
@@ -76,9 +61,8 @@ def reduce(X, n_comps=50, iters=1, nbhds=None,
     else:
         connector = MetricConnector(n_neighbors=nbhd_size, metric=metric, include_self=True)
 
-    embedder = SCAEmbedder(scorer=scorer, connector=connector, n_comps=n_comps, iters=iters)
-    dimred = embedder.embed(X, keep_scores=keep_scores, keep_loadings=keep_loadings, keep_all_iters=keep_all_iters,
-                            nbhds=nbhds)
+    embedder = SCAEmbedder(scorer=scorer, connector=connector, n_comps=n_comps, iters=iters, nbhds=nbhds)
+    dimred = embedder.embed(X, keep_scores=keep_scores, keep_loadings=keep_loadings, keep_all_iters=keep_all_iters)
 
     if not keep_scores and not keep_loadings and not keep_all_iters:
         return dimred
@@ -96,17 +80,7 @@ def reduce(X, n_comps=50, iters=1, nbhds=None,
     return result
 
 def reduce_scanpy(adata, keep_scores=False, keep_loadings=True, keep_all_iters=False, layer=None, key_added='sca',
-                  iters=1, model='wilcoxon',**kwargs):
-    """
-    Compute an SCA reduction of the given dataset, stored as a scanpy AnnData.
-
-    :param adata: AnnData object containing single-cell transcriptomic data to be reduced
-    :type adata: scanpy.AnnData
-    :param keep_scores: if True, stores information score matrix in adata.layers[key_added+'_score']. Default False.
-    :type keep_scores: bool
-    :
-    """
-
+                  iters=1, model='binomial',**kwargs):
     if layer is not None:
         X = adata.layers[layer]
     else:
