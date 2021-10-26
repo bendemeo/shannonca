@@ -106,6 +106,7 @@ def reduce_scanpy(adata, keep_scores=False, keep_loadings=True, keep_all_iters=F
     else:
         X = adata.X
 
+
     dimred_info = reduce(X, keep_scores=keep_scores, keep_loadings=keep_loadings,
                          keep_all_iters=keep_all_iters, iters=iters, model=model, **kwargs)
 
