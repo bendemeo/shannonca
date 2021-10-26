@@ -2,19 +2,36 @@ from scanpy.tools import pca
 from .correctors import FWERCorrector
 
 class Embedder:
+    """
+    Base class for Embedders. Does nothing, acting as an "identity" embedder.
+    """
     def __init__(self):
+        """
+        Constructor, extended by child classes.
+        """
         pass
 
     def embed(self,X):
-        #basic embedder does absolutely nothing
+        """
+        Returns the input data, unchanged.
+        """
         return(X)
 
 class SVDEmbedder(Embedder):
-    #Project input to its right singular vectors
+    """
+    Embedder that projects data to its top right singular vectors.
+    """
 
     def __init__(self, n_comps=50, svd_mat = None, **kwargs):
-        # svd_mat is the matrix whose singular vectors we project the input to; if none, project data to its own SVDs.
-        #additional arguments passed to sc.tl.pca
+        """
+        Constructor
+
+        :param n_comps: Number of top singular vectors to keep. Defines output dimensionality.
+        :type n_comps: int
+        :param svd_mat: if provided, project the input to the right singular vectors of this matrix. If None (default), project to singular vectors of the input.
+        :type svd_mat: numpy.ndarray | matrix | spmatrix
+        :param kwargs: Additional arguments passed to scanpy.tl.pca
+        """
 
         self.n_comps = n_comps
         self.kwargs = kwargs
