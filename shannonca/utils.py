@@ -20,14 +20,7 @@ def to_sparse_adjacency(nbhds, n_cells=None):
         n_cells = np.max(col_ind)+1 # infer based on neighbor indices
 
     # sparse adjacency matrix of NN graph
-    try:
-        nn_matrix = csr_matrix((data, (row_ind, col_ind)), shape=(len(nbhds), n_cells))
-    except:
-
-        print(np.max(col_ind))
-        print(n_cells)
-        print(np.max(row_ind))
-        print('hi')
+    nn_matrix = csr_matrix((data, (row_ind, col_ind)), shape=(len(nbhds), n_cells))
     return(nn_matrix)
 
 def dist_mat_to_nbhds(pairwise_dists, include_self=True, k=15):

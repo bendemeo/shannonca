@@ -37,6 +37,7 @@ class SCAEmbedder(Embedder):
         self.iters = iters
         self.scorer = scorer
         self.connector = connector
+        self.embedding_dict = {}
 
     def embed(self, X, keep_scores=False, keep_loadings=False, keep_all_iters=False, nbhds=None, verbose=True):
         assert (self.connector is not None) or (nbhds is not None), "must specify connector or neighborhoods"
@@ -51,6 +52,7 @@ class SCAEmbedder(Embedder):
 
             return embedder.embed(X)
 
+
         else:
             #make nbhds if not provided
             if nbhds is None or self.iters > 1:
@@ -60,7 +62,8 @@ class SCAEmbedder(Embedder):
                 base_embedding = base_embedder.embed(X, keep_scores=False, keep_loadings=False,
                                                      keep_all_iters=keep_all_iters, nbhds=nbhds)
                 self.embedding_dict = base_embedder.embedding_dict
-                print('iteration {}'.format(self.iters))
+                if verbose:
+                    print('iteration {}'.format(self.iters))
                 nbhds = self.connector.connect(base_embedding)
             else:
                 self.embedding_dict = {}

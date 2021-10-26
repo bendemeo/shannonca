@@ -13,8 +13,7 @@ def reduce(X, n_comps=50, iters=1, nbhds=None,
            nbhd_size=15,  metric='euclidean', model='wilcoxon',
            keep_scores=False, keep_loadings=False, keep_all_iters=False, verbose=False, n_tests = 'auto',
            seed=10,  chunk_size=None, **kwargs):
-    """
-    Compute an SCA reduction of the input data
+    """Compute an SCA reduction of the input data
 
     :param X: (num cells)x(num_genes)-sized array or sparse matrix to be dimensionality-reduced.
     :type X: numpy.ndarray | scipy.spmatrix
@@ -22,11 +21,10 @@ def reduce(X, n_comps=50, iters=1, nbhds=None,
     :type n_comps: int
     :param iters: Number of iterations of SCA. More iterations usually strengthens signal, stabilizing around 3-5
     :type iters: int
-    :param nbhd_size: Size of neighborhoods used to assess the local expression of a gene. Should be smaller than the
-    smallest subpopulation; default is 15.
+    :param nbhd_size: Size of neighborhoods used to assess the local expression of a gene.
+        Should be smaller than the smallest subpopulation; default is 15.
     :type nbhd_size: int
-    :param model: Model used to test for local enrichment of genes, used to compute information scores.
-        One of ["wilcoxon","binomial","ttest"], default "wilcoxon" (recommended).
+    :param model: Model used to test for local enrichment of genes, used to compute information scores. One of ["wilcoxon","binomial","ttest"], default "wilcoxon" (recommended).
     :type model: str
     :param nbhds: Optional - if k-neighborhoods of points are already determined, they can be specified here as
     a (num_cells)*k array or list. Otherwise, they will be computed from the PCA embedding. Default None
@@ -47,6 +45,7 @@ def reduce(X, n_comps=50, iters=1, nbhds=None,
     :return: If return_scores or return_loadings are both false, a (n cells)x(n_comps)-dimensional array
     of reduced features. Otherwise, a dictionary with keys 'reduction', 'scores' and/or 'loadings'.
     :rtype: numpy.ndarray | dict
+
     """
 
     if n_tests == 'auto':
