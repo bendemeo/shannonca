@@ -4,7 +4,7 @@ Top-level API
 .. currentmodule:: shannonca
 
 Dimensionality Reduction: dimred
-------------------
+----------------------------------
 .. autosummary::
    :toctree: generated/
    
