@@ -1,7 +1,7 @@
 Quick Start 
 =======================
 
-shannonca's [top-level API](https://shannonca.readthedocs.io/en/latest/api.html) offers two functions for use with and without scanpy. [`shannonca.dimred.reduce`](https://shannonca.readthedocs.io/en/latest/generated/shannonca.dimred.reduce.html#shannonca.dimred.reduce) accepts an array or sparse matrix, and outputs a lower-dimensional SCA reduction. Optional additional parameters control the dimensionality of the output, the neighborhood size, the model used to assess over- or under-expression, the degree of multiple testing correction when computing information scores, and various other settings. 
+shannonca's `top-level API <https://shannonca.readthedocs.io/en/latest/api.html>`_ offers two functions for use with and without scanpy. `reduce <https://shannonca.readthedocs.io/en/latest/generated/shannonca.dimred.reduce.html#shannonca.dimred.reduce>`_ accepts an array or sparse matrix, and outputs a lower-dimensional SCA reduction. Optional additional parameters control the dimensionality of the output, the neighborhood size, the model used to assess over- or under-expression, the degree of multiple testing correction when computing information scores, and various other settings. 
 
 A simple use case:
 
@@ -22,3 +22,17 @@ Scanpy integration
 =========================
 
 For scanpy users, we offer a wrapper ``reduce_scanpy``. This function accepts a scanpy ``AnnData`` object ``adata``, and runs ``reduce`` on the specified ``layer`` (by default, on ``adata.X``). The resulting reduction is stored under ``adata.obsm[key_added]``, where ``key_added`` defaults to "sca". Otherwise, the parameters are the same as ``reduce``. If ``keep_scores`` is True, the scores are stored at ``adata.layers[key_added+'_score']``. If ``keep_loadings`` is True, loadings are added in ``.varm[key_added+'loadings']``. 
+
+A simple use case:
+
+.. code-block:: python
+
+  import scanpy as sc
+  from shannonca.dimred import reduce_scanpy
+
+  adata = sc.read('my_scanpy_anndata_object.h5ad') # read in scanpy object
+  
+  # run SCA for 5 iterations to produce a 50-dimensional embedding
+  reduce_scanpy(adata, n_comps=50, iters=5, keep_scores=True, keep_loadings=True)
+ 
+
