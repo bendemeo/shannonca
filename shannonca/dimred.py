@@ -21,16 +21,13 @@ def reduce(X, n_comps=50, iters=1, nbhds=None,
     :type n_comps: int
     :param iters: Number of iterations of SCA. More iterations usually strengthens signal, stabilizing around 3-5
     :type iters: int
-    :param nbhd_size: Size of neighborhoods used to assess the local expression of a gene.
-        Should be smaller than the smallest subpopulation; default is 15.
+    :param nbhd_size: Size of neighborhoods used to assess the local expression of a gene. Should be smaller than the smallest subpopulation; default is 15.
     :type nbhd_size: int
     :param model: Model used to test for local enrichment of genes, used to compute information scores. One of ["wilcoxon","binomial","ttest"], default "wilcoxon" (recommended).
     :type model: str
-    :param nbhds: Optional - if k-neighborhoods of points are already determined, they can be specified here as
-    a (num_cells)*k array or list. Otherwise, they will be computed from the PCA embedding. Default None
+    :param nbhds: Optional - if k-neighborhoods of points are already determined, they can be specified here as a (num_cells)*k array or list. Otherwise, they will be computed from the PCA embedding. Default None
     :type nbhds: numpy.ndarray | list
-    :param metric: Metric used to compute k-nearest neighbor graphs for SCA score computation. Default "euclidean".
-        See sklearn.neighbors.DistanceMetric for list of choices.
+    :param metric: Metric used to compute k-nearest neighbor graphs for SCA score computation. Default "euclidean". See sklearn.neighbors.DistanceMetric for list of choices.
     :type metric: str
     :param keep_scores: if True, keep and return the information score matrix. Default False.
     :type keep_scores: bool
@@ -38,14 +35,12 @@ def reduce(X, n_comps=50, iters=1, nbhds=None,
     :type keep_loadings: bool
     :param verbose: If True, print progress. Default False
     :type verbose: bool
-    :param n_tests: Effective number of independent genes per cell, use for FWER multiple testing correction.
-        Set to "auto" to automatically determine by bootstrapping. Default "auto".
+    :param n_tests: Effective number of independent genes per cell, use for FWER multiple testing correction. Set to "auto" to automatically determine by bootstrapping. Default "auto".
     :type n_tests: str | int
     :param kwargs: Other arguments to be passed to the chosen scorer
-    :return: If return_scores or return_loadings are both false, a (n cells)x(n_comps)-dimensional array
-    of reduced features. Otherwise, a dictionary with keys 'reduction', 'scores' and/or 'loadings'.
+    :return: If return_scores or return_loadings are both false, a (n cells)x(n_comps)-dimensional array of reduced features. Otherwise, a dictionary with keys 'reduction', 'scores' and/or 'loadings'.
     :rtype: numpy.ndarray | dict
-
+    
     """
 
     if n_tests == 'auto':
@@ -135,6 +130,8 @@ def reduce_old(X, n_comps=50, iters=1, max_bins=float('inf'), fast_version=True,
            keep_scores=False, keep_loadings=False, keep_all_iters=False, verbose=False, n_tests = 'auto',
            seed=10,  **kwargs):
     """
+    DEPRECATED: please use reduce.
+
     :param X: (num cells)x(num_genes)-sized array or sparse matrix to be dimensionality-reduced. Should be nonnegative,
     with 0 indicating no recorded transcripts (required for binarization and binomial inference).
     :param n_comps: Desired dimensionality of the reduction.
