@@ -40,7 +40,7 @@ def reduce(X, n_comps=50, iters=1, nbhds=None,
     :param kwargs: Other arguments to be passed to the chosen scorer
     :return: If return_scores or return_loadings are both false, a (n cells)x(n_comps)-dimensional array of reduced features. Otherwise, a dictionary with keys 'reduction', 'scores' and/or 'loadings'.
     :rtype: numpy.ndarray | dict
-    
+
     """
 
     if n_tests == 'auto':
@@ -98,7 +98,7 @@ def reduce_scanpy(adata, keep_scores=False, keep_loadings=True, keep_all_iters=F
     :type adata: scanpy.AnnData
     :param keep_scores: if True, stores information score matrix in adata.layers[key_added+'_score']. Default False.
     :type keep_scores: bool
-    :
+
     """
 
     if layer is not None:
