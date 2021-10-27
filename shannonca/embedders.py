@@ -60,7 +60,24 @@ class SVDEmbedder(Embedder):
 
 
 class SCAEmbedder(Embedder):
+    """
+    Embedder that performs SCA on the input.
+
+    """
     def __init__(self, scorer, connector=None, n_comps=50, iters=1):
+        """
+        Constructor.
+
+        :param n_comps: Number of Shannon components to compute
+        :type n_comps: int
+        :param scorer: Scorer object used to generate scores from neighborhoods
+        :type scorer: Scorer
+        :param connector: Connector object used to generate neighborhoods of the input data. If None, you must provide neighborhoods when running ``embed``.
+        :type connector: Connector | None
+        :param iters: Number of SCA iterations to run
+        :type iters: int
+
+        """
         self.n_comps = n_comps
         self.iters = iters
         self.scorer = scorer
@@ -68,6 +85,23 @@ class SCAEmbedder(Embedder):
         self.embedding_dict = {}
 
     def embed(self, X, keep_scores=False, keep_loadings=False, keep_all_iters=False, nbhds=None, verbose=True):
+        """
+        Compute the SCA embedding
+
+        :param X: Input data, with one row per observation and one column per feature.
+        :type X: np.ndarray | matrix | spmatrix
+        :param keep_scores: If True, SCA scores are retained in the .scores attribute of this object. Default False.
+        :type keep_scores: bool
+        :param keep_loadings: If True, Shannon Component loadings are retained in the .loadings attribute. Default False.
+        :type keep_loadings: bool
+        :param keep_all_iters: If True, intermediate embeddings after each iteration are retained in self.embedding_dict, a dictionary of embeddings keyed by iteration number. Default False.
+        :type keep_all_iters: bool
+        :param nbhds: (Optional) Neighborhoods to use when computing scores. Overrides the Connector, if specified at construction. If Connector=None at construction, this parameter is not optional.
+        :type nbhds: list | None
+        :param verbose: If True, print progess during execution. Default True
+        :type verbose: bool
+
+        """
         assert (self.connector is not None) or (nbhds is not None), "must specify connector or neighborhoods"
 
         if self.iters == 0:

@@ -30,13 +30,29 @@ class MetricConnector(Connector):
         Constructor
 
         :param n_neighbors: number of neighbors of each observation to compute
-        :param metric: Metric to use. See `DistanceMetric <https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.DistanceMetric.html#sklearn.neighbors.DistanceMetric>`_ for available metrics.
+        :type n_neighbors: int
+        :param metric: Metric to use. See `DistanceMetric <https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.DistanceMetric.html#sklearn.neighbors.DistanceMetric>`_ for available metrics. Default 'euclidean'.
+        :type metric: str
+        :param include_self: whether observations should be classified as their own neighbors. Default True.
+        :type include_self: bool
+
         """
         self.n_neighbors = n_neighbors
         self.metric = metric
         self.include_self=include_self
 
     def connect(self, X, **kwargs):
+        """
+        Make neighborhoods of the input
+
+        :param X: input data, with one row per observation and one column per feature.
+        :type X: np.ndarray | matrix | spmatrix
+        :param kwargs: Additional arguments passed to sklearn.neighbors.NearestNeighbors
+
+        :return: A list of neighbor indices for each observation. Indexes rows of the input matrix
+        :rtype: list
+
+        """
         nn = NearestNeighbors(n_neighbors=self.n_neighbors, metric=self.metric, **kwargs)
         nn.fit(X)
         nbrs = nn.kneighbors(return_distance=False)
