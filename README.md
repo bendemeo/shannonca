@@ -1,4 +1,4 @@
-# SCA (Shannon Components Analysis)
+# SCA (Shannon Component Analysis)
 
 Shannon Component Analysis (SCA) is a dimensionality reduction technique for single-cell data which leverages mathematical information theory to identify biologically informative axes of variation in single-cell transcriptomic data, enabling recovery of rare and common cell types at superior resolution. It is written in Python. The pre-print can be found [here](https://www.biorxiv.org/content/10.1101/2021.01.19.427303v1).
 
