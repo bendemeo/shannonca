@@ -6,17 +6,32 @@ from .utils import dist_mat_to_nbhds
 
 
 class Connector:
+    """
+    Base class for Connectors.
+    """
     def __init__(self):
         pass
 
     def connect(self,X, **kwargs):
+        """
+        Method to generate nearest neighbors of input data.
+        """
         # insert code to make nearest neighbor graphs
         # should return a LIST of neighborhoods
         pass
 
 
 class MetricConnector(Connector):
+    """
+    Make neighborhoods of observations using a metric on the input data.
+    """
     def __init__(self, n_neighbors=15, metric='euclidean', include_self=True):
+        """
+        Constructor
+
+        :param n_neighbors: number of neighbors of each observation to compute
+        :param metric: Metric to use. See `DistanceMetric <https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.DistanceMetric.html#sklearn.neighbors.DistanceMetric>`_ for available metrics.
+        """
         self.n_neighbors = n_neighbors
         self.metric = metric
         self.include_self=include_self

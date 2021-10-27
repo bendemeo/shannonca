@@ -4,6 +4,7 @@ from scipy.stats import ttest_ind_from_stats, mannwhitneyu
 from scipy.stats.distributions import norm
 from scipy.stats.mstats import rankdata
 from .utils import sparse_vars
+from .scorers import *
 import numpy as np
 
 import sys
@@ -21,7 +22,21 @@ def log1m_taylor(x):
 def bootstrapped_ntests(X, trials=1000, k=15, model='binomial', return_all=False, seed=None, **kwargs):
     np.random.seed(seed)
     random_nbhds = np.random.choice(X.shape[0], size=(trials, k), replace=True)
-    nbhd_scores = info_score(X, random_nbhds, n_tests=1, model=model, **kwargs)
+
+    if issubclass(type(model), Scorer):
+        # can directly specify model or give a string to construct one.
+        scorer = model
+    elif model == 'wilcoxon':
+        scorer = WilcoxonScorer()
+    elif model == 'binomial':
+        scorer = BinomialScorer()
+    elif model == 'ttest':
+        scorer = TScorer()
+    else:  # break
+        assert False, 'scorer not found' #TODO fix
+
+    nbhd_scores = scorer.score(X, nbhds=random_nbhds)
+    #nbhd_scores = info_score(X, random_nbhds, n_tests=1, model=model, **kwargs)
     nbhd_ps = np.exp(-1 * np.abs(nbhd_scores.todense()))
 
     nbhd_minps = np.min(nbhd_ps, axis=1).A.flatten()

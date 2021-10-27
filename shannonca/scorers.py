@@ -1,7 +1,7 @@
 from .utils import to_sparse_adjacency
 from scipy.stats import rankdata
 import numpy as np
-from scipy.sparse import csr_matrix, hstack
+from scipy.sparse import csr_matrix, hstack, issparse
 from scipy.stats import norm, binom, ttest_ind_from_stats
 import sys
 
@@ -24,6 +24,8 @@ class Tf_idfScorer(Scorer):
 
     def score(self, X, nbhds = None):
         #nbhds is ignored; just TF-IDF transform the data.
+        if not issparse(X):
+            X = csr_matrix(X)
 
         X_binarized = (X>0).astype("float")
         counts = X_binarized.sum(axis=0).A.flatten()
@@ -179,6 +181,9 @@ class TScorer(Scorer):
         self.corrector = corrector
 
     def score(self, X, nbhds, nn_matrix = None):
+        if not issparse(X):
+            X = csr_matrix(X)
+
         k = len(nbhds[0])
         if nn_matrix is None:
             data = np.ones(np.sum([len(x) for x in nbhds]))
@@ -235,6 +240,9 @@ class WilcoxonScorer(Scorer):
         super().__init__(corrector, seed, verbose)
 
     def score(self, X, nbhds, nn_matrix=None):
+        if not issparse(X):
+            X = csr_matrix(X)
+
         k = len(nbhds[0])
 
         super().score(X, nbhds)  # handle multi-test factor determination

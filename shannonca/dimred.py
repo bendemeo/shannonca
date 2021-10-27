@@ -98,6 +98,19 @@ def reduce_scanpy(adata, keep_scores=False, keep_loadings=True, keep_all_iters=F
     :type adata: scanpy.AnnData
     :param keep_scores: if True, stores information score matrix in adata.layers[key_added+'_score']. Default False.
     :type keep_scores: bool
+    :param keep_loadings: if True, stores loadings in adata.varm[key_added+'_loadings']. Default False.
+    :type keep_loadings: bool
+    :param keep_all_iters: if True, store the embedding after each iteration in adata.obsm[key_added+'_'+i] for i in 1,2,...iters. Default False
+    :type keep_all_iters: bool
+    :param layer: Layer to reduce. If None, reduces adata.X. Otherwise, reduces adata.layers[layer]. Default None.
+    :type layer: str | None
+    :param key_added: Namespace for storage of results. Defaults to 'sca'.
+    :type key_added: str
+    :param iters: Number of SCA iterations to run.
+    :type iters: int
+    :param model: Model used to test for local enrichment of genes, used to compute information scores. One of ["wilcoxon","binomial","ttest"], default "wilcoxon" (recommended).
+    :type model: str
+    :param kwargs: Additional arguments to passed to ``reduce`` (e.g. verbose, n_tests, chunk_size).
 
     """
 

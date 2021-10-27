@@ -38,6 +38,17 @@ class SVDEmbedder(Embedder):
         self.svd_mat = svd_mat
 
     def embed(self, X, keep_loadings=False):
+        """
+        Project X onto a set of top right singular vectors, and return the result
+
+        :param X: Data to be reduced
+        :type X: np.ndarray | matrix | spmatrix
+        :param keep_loadings: Whether to keep the loading vectors. If True, the loading vectors are stored as self.loadings. Default False.
+        :type keep_loadings: bool
+
+        :return: A low-dimensional representation of X.
+        :rtype: np.ndarray | matrix | spmatrix
+        """
         if self.svd_mat is None:
             self.svd_mat = X
         a, bt, c, d = pca(self.svd_mat, n_comps=self.n_comps, return_info=True, **self.kwargs)

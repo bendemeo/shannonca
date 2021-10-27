@@ -1,8 +1,8 @@
 # SCA (Shannon Components Analysis)
 
-Shannon Components Analysis (formerly called scalpel) is a dimensionality reduction technique for single-cell data which leverages mathematical information theory to identify biologically informative axes of variation in single-cell transcriptomic data, enabling recovery of rare and common cell types at superior resolution. It is written in Python. The pre-print can be found [here](https://www.biorxiv.org/content/10.1101/2021.01.19.427303v1).
+Shannon Component Analysis (SCA) is a dimensionality reduction technique for single-cell data which leverages mathematical information theory to identify biologically informative axes of variation in single-cell transcriptomic data, enabling recovery of rare and common cell types at superior resolution. It is written in Python. The pre-print can be found [here](https://www.biorxiv.org/content/10.1101/2021.01.19.427303v1).
 
-Required packages: scanpy, sklearn, numpy, scipy, fbpca, itertools
+For full documentation of shannonca's API, see our [Readthedocs page](https://shannonca.readthedocs.io/). 
 
 ## Installation
 SCA is available via pip:
