@@ -11,6 +11,14 @@ In this implementation, we offer two ways to interact with SCA. The top-level AP
 
 For users looking to customize and extend SCA beyond standard use cases, we offer an object-oriented API which allows more nuanced construction of dimensionality reduction tools using SCA's information-theoretic foundation. For example, the object-oriented API may be used to tweak the multiple testing correction method, base embedding strategy, or generation of k-nearest neighborhood graphs from embeddings. 
 
+Installation
+---------------- 
+shannonca is uploaded to PyPI, and can be downloaded using pip:
+
+``pip3 install shannonca``
+
+Alternatively, you can clone our `github repository <https://github.com/bendemeo/shannonca/>`_, which will contain the very latest changes, but may also be less stable than the version uploaded to PyPI. 
+
 Contents
 --------
 
