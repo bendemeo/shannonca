@@ -47,3 +47,13 @@ adata = sc.AnnData(X)
 reduce_scanpy(adata, keep_scores=True, keep_loadings=True, keep_all_iters=True, layer=None, key_added='sca', iters=1, n_comps=50)
 ```
 This function shares all parameters with `reduce`, but instead of returning the reduction, it updates the input AnnData object. Dimensionality reductions are stored in `adata.obsm[key_added]`, or, if keep_all_iters=True, in `adata.obsm['key_added_i']` for each iteration number i. If `keep_scores=True` in the reducer constructor, the information scores of each gene in each cell are stored in `adata.layers[key_added_score]`. If `layer=None`, the algorithm is run on `adata.X`; otherwise, it is run on `adata.layers[layer]`.
+
+## Troubleshooting
+If you are having trouble running SCA, we try the following:
+
+* Pull from the github repository to ensure that your version of SCA is up to date. 
+* Ensure that the Python version is at least 3.0, and that the installations of scanpy, numpy, scipy, and sklearn are up to date. 
+* When running the `reduce` function, ensure that the input is either a CSR sparse matrix (`scipy.sparse.csr_matrix`) or a dense numpy array, with one row per cell and one column per gene. Coercion to sparse matrices is easy via `scipy.sparse.tocsr()`
+* When running `reduce_scanpy`, ensure that the input is a scanpy anndata object. 
+* Ensure that the data type of the input is either an integer or float. 
+* Double-check that the code follows the docstring for the relevant function: reduce or reduce_scanpy.
