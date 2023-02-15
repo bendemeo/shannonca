@@ -86,10 +86,12 @@ def reduce(X, n_comps=50, iters=1, nbhds=None,
         result['scores'] = embedder.scores
     if keep_loadings:
         result['loadings'] = embedder.loadings
+           
+    result['variance_explained'] = embedder.variance_explained
 
     return result
 
-def reduce_scanpy(adata, keep_scores=False, keep_loadings=True, keep_all_iters=False, layer=None, key_added='sca',
+def reduce_scanpy(adata, keep_scores=False, keep_loadings=True, keep_variance_explained=True, keep_all_iters=False, layer=None, key_added='sca',
                   iters=1, model='wilcoxon',**kwargs):
     """
     Compute an SCA reduction of the given dataset, stored as a scanpy AnnData.
@@ -102,6 +104,8 @@ def reduce_scanpy(adata, keep_scores=False, keep_loadings=True, keep_all_iters=F
     :type keep_loadings: bool
     :param keep_all_iters: if True, store the embedding after each iteration in adata.obsm[key_added+'_'+i] for i in 1,2,...iters. Default False
     :type keep_all_iters: bool
+    :param keep_variance_explained: If True, stores variance explained by each component in adata.uns[key_added+'_variance_explained']. Useful e.g. for creating elbow plots. 
+    :type keep_variance_explained: bool
     :param layer: Layer to reduce. If None, reduces adata.X. Otherwise, reduces adata.layers[layer]. Default None.
     :type layer: str | None
     :param key_added: Namespace for storage of results. Defaults to 'sca'.
@@ -136,6 +140,8 @@ def reduce_scanpy(adata, keep_scores=False, keep_loadings=True, keep_all_iters=F
             adata.layers[key_added + '_score'] = dimred_info['scores']
         if 'loadings' in dimred_info:
             adata.varm[key_added + '_loadings'] = dimred_info['loadings']
+        if keep_variance_explained and 'variance_explained' in dimred_info:
+            adata.uns[key_added+'_variance_explained'] = dimred_info['variance_explained']
 
 ##### DEPRECATED, left in temporarily to ensure new method outputs match old method outputs. ######
 
