@@ -53,6 +53,8 @@ class SVDEmbedder(Embedder):
             self.svd_mat = X
         a, bt, c, d = pca(self.svd_mat, n_comps=self.n_comps, return_info=True, **self.kwargs)
 
+        self.variance_explained = d
+        
         if keep_loadings:
             self.loadings = bt.transpose()
         return X @ bt.transpose()
@@ -111,8 +113,11 @@ class SCAEmbedder(Embedder):
 
             if keep_all_iters:
                 self.embedding_dict = {}
-
-            return embedder.embed(X)
+               
+            result = embedder.embed(X)
+            self.variance_explained = embedder.variance_explained
+            
+            return result
 
 
         else:
@@ -135,6 +140,8 @@ class SCAEmbedder(Embedder):
             final_embedder = SVDEmbedder(n_comps=self.n_comps, svd_mat=scores)
 
             result = final_embedder.embed(X, keep_loadings=True)
+            
+            self.variance_explained = final_embedder.variance_explained
 
             if keep_scores:
                 self.scores = scores
