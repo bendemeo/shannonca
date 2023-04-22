@@ -4,6 +4,11 @@ from scipy.sparse import csr_matrix
 from sklearn.metrics import pairwise_distances
 
 def knn_cover(X, k=50, metric='euclidean',n_covers=1, seed=10, **kwargs):
+    """
+    [BETA]
+    create a cover for local application of SCA (or another dimensionality reducer).
+    See "Mathematical Methods for Single-cell Analysis" (DeMeo, 2022) chapter 3 for more details
+    """
     sets = []
     np.random.seed(seed)
     for i in range(n_covers):
@@ -20,6 +25,10 @@ def knn_cover(X, k=50, metric='euclidean',n_covers=1, seed=10, **kwargs):
     return sets
 
 def multires_dists(X, covering_sets, embedder, metric='euclidean', aggregator='max',  max_neighbors=float('inf'), **kwargs):
+    """
+    [BETA]
+    Aggregate several local pairwise distance matrices into one global one.
+    """
     # d(x,y) is maximum distance in any covering set PCA
 
     distance_matrices = []
