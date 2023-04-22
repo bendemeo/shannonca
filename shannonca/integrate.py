@@ -3,6 +3,11 @@ import numpy as np
 import pandas as pd
 
 def correct(Xs, feat_names=None, n_features=1000, **kwargs):
+    """
+    [BETA]
+    Identifies genes with high maximum surprisal score in all batches and subsets to those genes.
+    This can favor biological variation and tailor batch effects.
+    """
     if feat_names is None:
         feat_names = range(Xs[0].shape[1])
 
@@ -25,6 +30,10 @@ def correct(Xs, feat_names=None, n_features=1000, **kwargs):
 
 
 def correct_scanpy(adata, batch_key='batch', n_features=1000, **kwargs):
+    """
+    [BETA]
+    A wrapper for "correct"
+    """
     gene_sigs_dict = {}
     for i, batch in enumerate(np.unique(adata.obs[batch_key].tolist())):
         # print(batch)
