@@ -18,7 +18,7 @@ setup(
   download_url =  'https://github.com/bendemeo/shannonca/archive/refs/tags/0.0.1.tar.gz',
   keywords = ['Shannon', 'Information', 'Dimensionality','reduction', 'single-cell','RNA'], 
   install_requires=[           
-          'sklearn',
+          'scikit-learn',
           'scipy',
           'numpy',
           'pandas',
