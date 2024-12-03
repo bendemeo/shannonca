@@ -5,7 +5,6 @@ Surprisal Component Analysis (SCA) is a dimensionality reduction technique for s
 For full documentation of shannonca's API, see our [Readthedocs page](https://shannonca.readthedocs.io/). 
 
 ## Installation
-**Note:** I have temporarily lost access to my PyPI account, so the version on pip is out of date (specifically, its dependency file lists scikit-learn incorrectly). I hope to resolve this in the next week (before end of July 2024). In the meantime, please use the version here by cloning the latest version of this repository. Apologies for the inconvenience.
 
 SCA is available via pip:
 ```pip install shannonca```
