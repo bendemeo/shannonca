@@ -39,9 +39,6 @@ def dist_mat_to_nbhds(pairwise_dists, include_self=True, k=15):
     return((new_idxs, new_dists))
 
 
-
-
-
 def metagene_loadings(data, n_genes=10, rankby_abs=False, key='sca'):
     """
     return the top-loaded genes for each Scalpel metagene
@@ -132,32 +129,3 @@ def sparse_vars(a, axis=None):
     a_squared = a.copy()
     a_squared.data **= 2
     return a_squared.mean(axis) - np.square(a.mean(axis))
-
-def add_nbrs(adata, idxs, dists, key_added='new', add_self=True):
-    # assumes same number of neighbors
-    k = idxs.shape[1]
-
-    if add_self:
-        dists = np.concatenate((np.zeros((dists.shape[0], 1)), dists), axis=1)[:, :-1]
-        idxs = np.concatenate((np.arange(idxs.shape[0]).reshape(-1, 1), idxs), axis=1)[:, :-1]
-
-    dists, conns = _compute_connectivities_umap(idxs, dists, n_obs=adata.shape[0], n_neighbors=k)
-
-    adata.obsp[key_added + '_distances'] = dists
-    adata.obsp[key_added + '_connectivities'] = conns
-    adata.uns[key_added] = {'connectivities_key': key_added + '_connectivities',
-                            'distances_key': key_added + '_distances',
-                            'params': {'method': 'umap'}}
-
-def add_nbrs_from_dists(adata, pairwise_dists, k=10, **kwargs):
-    # given a (sparse) pairwise distance matrix, add k-nearest neighbors connectivity info to adata.
-
-    candidate_idxs = np.split(pairwise_dists.indices,
-                              pairwise_dists.indptr[1:-1])  # list for each obs of other obs with recorded dists
-    candidate_dists = np.split(pairwise_dists.data, pairwise_dists.indptr[1:-1])  # those distances
-
-    new_idxs = [y[np.argsort(x)[:k]] for x, y in zip(candidate_dists, candidate_idxs)]
-    new_dists = [np.sort(x)[:k] for x in candidate_dists]
-
-    add_nbrs(adata, idxs=np.vstack(new_idxs), dists=np.vstack(new_dists), **kwargs)
-
