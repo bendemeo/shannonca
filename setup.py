@@ -7,7 +7,7 @@ with open('README.md') as f:
 setup(
   name = 'shannonca', 
   packages = find_packages(exclude=['data']),  
-  version = '0.0.8',   
+  version = '0.0.9',   
   license='MIT',       
   description = 'Informative Dimensionality Reduction via Shannon Component Analysis',   
   long_description=long_description,

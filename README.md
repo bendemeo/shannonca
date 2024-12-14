@@ -19,7 +19,6 @@ SCA requires the following packages:
 * pandas
 * seaborn
 * scanpy
-* fbpca
 
 
 ## Usage

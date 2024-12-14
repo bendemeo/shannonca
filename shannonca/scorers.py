@@ -7,13 +7,56 @@ import sys
 
 
 class Scorer:
+    """
+    Base class for Scorers. A Scorer converts raw or normalized expression values into gene enrichment scores.
+
+    Parameters
+    ----------
+    corrector : object, optional
+        An object used for multiple testing correction. Default is None.
+    seed : int, optional
+        Random seed for reproducibility. Default is None.
+    verbose : bool, optional
+        If True, print progress and debugging information. Default is False.
+    """
+
     def __init__(self, corrector=None, seed=None, verbose=False):
+        """
+        Initializes the Scorer with optional multiple testing correction, random seed, and verbosity.
+
+        Parameters
+        ----------
+        corrector : object, optional
+            An object used for multiple testing correction. Default is None.
+        seed : int, optional
+            Random seed for reproducibility. Default is None.
+        verbose : bool, optional
+            If True, print progress and debugging information. Default is False.
+        """
         self.corrector = corrector
         self.seed = seed
         self.verbose = verbose
 
-    def score(self, X, nbhds, nn_matrix = None):
-        k = len(nbhds[0])
+    def score(self, X, nbhds, nn_matrix=None):
+        """
+        Compute gene enrichment scores for the given data and neighborhoods.
+
+        Parameters
+        ----------
+        X : numpy.ndarray or scipy.spmatrix
+            The input data matrix with rows as observations and columns as features.
+        nbhds : list of lists
+            A list of neighborhoods, where each neighborhood is a list of indices corresponding to the observations in that neighborhood.
+        nn_matrix : scipy.sparse matrix, optional
+            A sparse matrix representing the nearest neighbor graph. Default is None.
+
+        Returns
+        -------
+        None
+        """
+        k = len(nbhds[0])  # Number of neighbors in each neighborhood
+
+        # Placeholder for actual scoring logic
         # if self.n_tests == 'auto':  # compute by bootstrapping
         #     self.n_tests = 1
         #     self.n_tests = bootstrapped_ntests(X, scorer=self, return_all=False, seed=self.seed)
@@ -21,31 +64,106 @@ class Scorer:
 
 
 class Tf_idfScorer(Scorer):
+    """
+    Scorer that computes TF-IDF (Term Frequency-Inverse Document Frequency) scores for the input data.
 
-    def score(self, X, nbhds = None):
-        #nbhds is ignored; just TF-IDF transform the data.
+    This scorer ignores neighborhoods and directly applies the TF-IDF transformation to the data.
+
+    Methods
+    -------
+    score(X, nbhds=None)
+        Compute the TF-IDF scores for the input data.
+    """
+
+    def score(self, X, nbhds=None):
+        """
+        Compute the TF-IDF scores for the input data.
+
+        Parameters
+        ----------
+        X : numpy.ndarray or scipy.spmatrix
+            The input data matrix with rows as observations and columns as features.
+        nbhds : list of lists, optional
+            This parameter is ignored in this scorer. Default is None.
+
+        Returns
+        -------
+        scipy.sparse.csr_matrix
+            The TF-IDF transformed data.
+        """
+        # Convert to sparse matrix if not already sparse
         if not issparse(X):
             X = csr_matrix(X)
 
-        X_binarized = (X>0).astype("float")
-        counts = X_binarized.sum(axis=0).A.flatten()
-        idfs = np.ones(len(counts))
-        idfs[counts>0] = np.log(X.shape[0]/counts[counts>0])
+        # Binarize the data (presence/absence of features)
+        X_binarized = (X > 0).astype("float")
 
+        # Compute the document frequency (DF) for each feature
+        counts = X_binarized.sum(axis=0).A.flatten()
+
+        # Compute the inverse document frequency (IDF) for each feature
+        idfs = np.ones(len(counts))
+        idfs[counts > 0] = np.log(X.shape[0] / counts[counts > 0])
+
+        # Apply the IDF weights to the original data to get TF-IDF scores
         scores = X.multiply(idfs)
-        return(scores)
+
+        return scores
 
 class BinomialScorer(Scorer):
     def __init__(self, corrector=None, seed=None, verbose=False, scaled=False,
                  fast_version=True, max_bins=float('inf')):
+        """
+        Initialize the BinomialScorer.
+
+        Parameters
+        ----------
+        corrector : object, optional
+            An object used for multiple testing correction. Default is None.
+        seed : int, optional
+            Random seed for reproducibility. Default is None.
+        verbose : bool, optional
+            If True, print progress and debugging information. Default is False.
+        scaled : bool, optional
+            If True, use scaled bins for probability approximation. Default is False.
+        fast_version : bool, optional
+            If True, use a faster version of the scoring algorithm. Default is True.
+        max_bins : float, optional
+            Maximum number of bins for probability approximation. Default is infinity.
+        """
         super().__init__(corrector, seed, verbose)
         self.fast_version = fast_version
         self.max_bins = max_bins
         self.scaled = scaled
         self.verbose = verbose
 
-    def get_binom_scores(self, gene_probs, k, max_bins=500, verbose=True, scaled=False,
-                     error_rate=1.0):
+    def get_binom_scores(self, gene_probs, k, max_bins=500, verbose=True, scaled=False, error_rate=1.0):
+        """
+        Compute binomial scores for given gene probabilities.
+        Parameters:
+        -----------
+        gene_probs : array-like
+            Array of gene probabilities.
+        k : int
+            Number of trials.
+        max_bins : int, optional
+            Maximum number of bins to use for splitting the interval (default is 500).
+        verbose : bool, optional
+            If True, print progress messages (default is True).
+        scaled : bool, optional
+            If True, use scaled bins with more density in lower probabilities (default is False).
+        error_rate : float, optional
+            Error rate threshold for p-values (default is 1.0).
+        Returns:
+        --------
+        tuple
+            A tuple containing:
+            - gene_bins : numpy.ndarray
+                Array of bins each gene is assigned to based on its global probability.
+            - binom_scores : numpy.ndarray
+                Array of binomial scores for each bin and trial.
+        """
+    
         # compute binom_test(x, k, p) for all x in 1:k and all p in gene_probs
         # if scaled, put more density in lower probabilities
         if max_bins < float('inf'):
@@ -175,6 +293,13 @@ class BinomialScorer(Scorer):
 
 class TScorer(Scorer):
     def __init__(self, corrector=None, seed=None, verbose=False):
+        """
+        Initializes the scorer with optional corrector, seed, and verbosity settings.
+        Args:
+            corrector (optional): An optional corrector object to be used by the scorer.
+            seed (optional): An optional seed value for random number generation.
+            verbose (bool): A flag to enable verbose output. Defaults to False.
+        """
         super().__init__(corrector, seed, verbose)
         self.verbose =  verbose
         self.seed = seed
@@ -237,17 +362,43 @@ class TScorer(Scorer):
 
 class WilcoxonScorer(Scorer):
     def __init__(self, corrector = None, seed=None, verbose=False):
+        """
+        Scores based on the Wilcoxon rank sum test for local vs. global gene expression.
+
+        Local gene expression is compared to global gene expression in a neighborhood.
+
+        Parameters
+        ----------
+        corrector : object, optional
+            An optional corrector object to be used by the scorer.
+        seed : int, optional
+            An optional seed value for random number generation.
+        verbose : bool, optional
+            A flag to enable verbose output. Defaults to False.
+        """
         super().__init__(corrector, seed, verbose)
 
     def score(self, X, nbhds, nn_matrix=None):
+        """
+        Compute Wilcoxon rank sum test scores for the input data.
+
+        Parameters
+        ----------
+        X : numpy.ndarray or scipy.spmatrix
+            The input data matrix with rows as observations and columns as features.
+        nbhds : list of lists
+            A list of neighborhoods, where each neighborhood is a list of indices corresponding to the observations in that neighborhood.
+        nn_matrix : scipy.sparse matrix, optional
+            A sparse matrix representing the nearest neighbor graph. Default is None,
+            in which case it will be computed from the neighborhoods.
+        """
+
         if not issparse(X):
             X = csr_matrix(X)
 
         k = len(nbhds[0])
 
         super().score(X, nbhds)  # handle multi-test factor determination
-        # Wilcoxon rank sum testa
-        # overall_exprs = X.todense().transpose().tolist()
 
         n_genes = X.shape[1]
 
@@ -288,13 +439,38 @@ class WilcoxonScorer(Scorer):
 class ChunkedScorer(Scorer):
 
     def __init__(self, base_scorer, chunk_size=1000, max_size=None):
+        """
+        Computes scores in gene chunks to avoid memory issues.
 
+        Parameters
+        ----------
+        base_scorer : Scorer
+            The base scorer to use for computing scores.
+        chunk_size : int, optional
+            The size of the gene chunks to use. Default is 1000.
+        max_size : int, optional
+            The maximum number of floats to store in a dense matrix at once. Default is None.
+        """
         self.verbose = base_scorer.verbose
         self.base_scorer = base_scorer
         self.chunk_size = chunk_size
         self.max_size = max_size
 
     def score(self, X, nbhds, **kwargs):
+        """
+        Compute scores in gene chunks to avoid memory issues.
+        Parameters:
+        X : numpy.ndarray
+            The gene expression matrix with shape (n_cells, n_genes).
+        nbhds : list or numpy.ndarray
+            Neighborhoods information for each cell.
+        **kwargs : dict
+            Additional keyword arguments to pass to the base scorer.
+        
+        Returns:
+        scipy.sparse.csr_matrix
+            A sparse matrix containing the computed scores.
+        """
 
         #amortize this over all chunks.
         nn_matrix = to_sparse_adjacency(nbhds, n_cells=X.shape[0])

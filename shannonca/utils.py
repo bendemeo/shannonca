@@ -4,7 +4,6 @@ from scipy.sparse import issparse, csr_matrix
 import scanpy as sc
 from sklearn.neighbors import NearestNeighbors
 import matplotlib.pyplot as plt
-from scanpy.neighbors import _compute_connectivities_umap
 
 def to_sparse_adjacency(nbhds, n_cells=None):
     if type(nbhds) is np.ndarray:
@@ -41,11 +40,11 @@ def dist_mat_to_nbhds(pairwise_dists, include_self=True, k=15):
 
 def metagene_loadings(data, n_genes=10, rankby_abs=False, key='sca'):
     """
-    return the top-loaded genes for each Scalpel metagene
+    return the top-loaded genes for each SCA component
     :param data: AnnData or dict output from reduce_scanpy or reduce. Must contain loading data.
     :param n_genes: Number of top-loaded genes to record
     :param rankby_abs: If True, record the top genes by absolute value.
-    :param key: Namespace of Scalpel data, if data is a scanpy object. Will look under data.varm[key+'_loadings'].
+    :param key: Namespace of SCA loading data, if data is a scanpy object. Will look under data.varm[key+'_loadings'].
     :return: Dictionary mapping [sca component number]:{[top gene 1]:loading, [top_gene_2]:loading... [top_gene_k]:loading}
     """
 
